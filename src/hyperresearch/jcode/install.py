@@ -76,7 +76,31 @@ def _read_receipt(root: Path) -> dict[str, Any] | None:
         return None
     if receipt_path.is_symlink():
         raise JcodeInstallError(f"refusing symlink receipt: {receipt_path}")
-    return json.loads(receipt_path.read_text(encoding="utf-8"))
+    try:
+        value = json.loads(receipt_path.read_text(encoding="utf-8"))
+    except (json.JSONDecodeError, OSError) as exc:
+        raise JcodeInstallError(f"invalid receipt: {receipt_path}") from exc
+    if not isinstance(value, dict):
+        raise JcodeInstallError(f"invalid receipt object: {receipt_path}")
+    return value
+
+
+def _validate_receipt(receipt: dict[str, Any], home: Path, global_root: Path) -> None:
+    if receipt.get("schema_version") != 1 or receipt.get("product") != "monokl":
+        raise JcodeInstallError("receipt identity mismatch")
+    if Path(str(receipt.get("home", ""))).resolve(strict=False) != home.resolve(strict=False):
+        raise JcodeInstallError("receipt HOME mismatch")
+    for item in receipt.get("files", []):
+        if not isinstance(item, dict) or not isinstance(item.get("path"), str):
+            raise JcodeInstallError("invalid receipt file entry")
+        path = Path(item["path"])
+        if path.parent == global_root:
+            if path.name not in {*GLOBAL_FILES, RECEIPT_NAME}:
+                raise JcodeInstallError(f"receipt names an unowned global file: {path}")
+            continue
+        parts = path.parts
+        if path.name != "SKILL.md" or len(parts) < 4 or parts[-3] != "skills" or parts[-4] != ".jcode" or not parts[-2].startswith("monokl-"):
+            raise JcodeInstallError(f"receipt path is outside Monokl skill roots: {path}")
 
 
 def _verify_owned_or_absent(files: list[ManagedFile], receipt: dict[str, Any] | None) -> None:
@@ -108,7 +132,11 @@ def _atomic_write_files(files: list[ManagedFile], receipt_root: Path, receipt: d
             tmp = staging / hashlib.sha256(str(managed.path).encode()).hexdigest()
             tmp.write_bytes(managed.content)
             shutil.copyfile(tmp, managed.path)
-        (receipt_root / RECEIPT_NAME).write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        receipt_path = receipt_root / RECEIPT_NAME
+        backups[receipt_path] = receipt_path.read_bytes() if receipt_path.exists() else None
+        receipt_tmp = staging / RECEIPT_NAME
+        receipt_tmp.write_text(json.dumps(receipt, indent=2, sort_keys=True) + "\n", encoding="utf-8")
+        os.replace(receipt_tmp, receipt_path)
     except Exception:
         for path, content in backups.items():
             if content is None:
@@ -136,6 +164,8 @@ def install_jcode_payload(home: Path | None = None, project: Path | None = None)
             files.append(ManagedFile(_safe_child(project_skill_root, "SKILL.md"), _payload_bytes(resource)))
     receipt_root = global_root
     receipt = _read_receipt(receipt_root)
+    if receipt is not None:
+        _validate_receipt(receipt, home, global_root)
     _verify_owned_or_absent(files, receipt)
     new_receipt = {
         "schema_version": 1,
@@ -156,6 +186,7 @@ def uninstall_jcode_payload(home: Path | None = None) -> dict[str, Any]:
     receipt = _read_receipt(global_root)
     if receipt is None:
         raise JcodeInstallError("no Monokl receipt found")
+    _validate_receipt(receipt, home, global_root)
     removed: list[str] = []
     for item in receipt.get("files", []):
         path = Path(item["path"])

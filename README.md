@@ -6,13 +6,14 @@
 
 ---
 
-**Monokl** is a Jcode-only research extension derived from HyperResearch. It preserves the HyperResearch engine, persistent vault, evidence discipline, adversarial critique gates, citation auditing, resumability, and complete 16-stage methodology while translating Claude-specific Task/Skill/Todo wording into Jcode `swarm`, `skill`, and `todo` operations.
+**Monokl** is a Jcode-only research extension derived from HyperResearch. It preserves the engine, persistent vault, evidence discipline, critique gates, citation auditing, resumability, and complete research method while translating host orchestration into Jcode `swarm`, `skill`, and `todo` operations.
 
 ## Install
 
 ```bash
-pip install .
+pip install monokl-0.2.0-py3-none-any.whl
 monokl jcode install --project .
+monokl jcode doctor --project . --json
 ```
 
 Then load `/monokl` in Jcode.
@@ -31,14 +32,14 @@ Python 3.11 to 3.13 is supported.
 
 - `monokl` CLI, with `hpr` and `hyperresearch` compatibility aliases.
 - One global Jcode skill: `~/.jcode/skills/monokl`.
-- Project-local stage skill references under `.jcode/skills/monokl-*`.
+- Eighteen full project-local stage skills under `.jcode/skills/monokl-*`.
 - Machine-readable stage and agent parity map at `parity-map.json`.
 - Safe installer and guarded uninstaller with receipts and SHA-256 hashes.
 - Packaged upstream attribution and license inventory.
 
 ## Research method
 
-Monokl keeps the HyperResearch methodology intact. The Jcode layer is orchestration, not a rewrite.
+Monokl keeps the HyperResearch methodology intact. The Jcode layer changes orchestration, not research authority.
 
 | Stage | Name | Notes |
 |---:|---|---|

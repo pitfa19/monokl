@@ -9,7 +9,8 @@ description = "Jcode-native research extension derived from HyperResearch with d
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11,<3.14"
-authors = [{name = "pitfa19"}]
+authors = [{name = "Jordan Gibbs"}]
+maintainers = [{name = "pitfa19"}]
 keywords = ["research", "knowledge-base", "wiki", "llm", "markdown", "cli", "agent", "zettelkasten"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -82,6 +83,7 @@ include = [
     "UPSTREAM.md",
     "README.md",
     "pyproject.toml",
+    "scripts/**",
 ]
 
 [tool.ruff]
