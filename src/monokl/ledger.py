@@ -21,6 +21,7 @@ from .contracts import (
     run_contract,
     sha256_hex,
     transition_contract,
+    reasoning_task_contract,
 )
 
 STATE_DIR = ".monokl"
@@ -43,6 +44,9 @@ TRANSITION_KEYS = {
     "sha256",
 }
 ARTIFACT_REF_KEYS = {"id", "path", "sha256", "contract"}
+REASONING_TASK_KEYS = {"schema_version", "contract", "protocol", "task_id", "task_sha256", "instructions", "source_artifacts", "allowed_result_fields", "authority"}
+REASONING_RESULT_KEYS = {"schema_version", "contract", "protocol", "task_id", "task_sha256", "observations", "inferences", "uncertainties", "provider_metadata", "authority"}
+
 RETRIEVAL_KEYS = {
     "schema_version",
     "contract",
@@ -67,7 +71,7 @@ RETRIEVAL_KEYS = {
     "browser_isolation_policy",
     "observed_limits",
 }
-ALLOWED_TRANSITIONS = {("absent", "initialized"), ("initialized", "scoped"), ("scoped", "retrieved")}
+ALLOWED_TRANSITIONS = {("absent", "initialized"), ("initialized", "scoped"), ("scoped", "retrieved"), ("retrieved", "tasked"), ("tasked", "reasoned")}
 
 
 @dataclass(frozen=True)
@@ -248,6 +252,48 @@ def add_retrieval(run_dir: Path, payload: dict[str, Any]) -> dict[str, Any]:
     return {"schema_version": SCHEMA_VERSION, "command": "retrieve", "state": "retrieved", "retrieval": payload}
 
 
+
+def create_reasoning_task(run_dir: Path) -> dict[str, Any]:
+    state = run_dir / STATE_DIR
+    if not state.is_dir() or state.is_symlink():
+        raise ContractError("run is not initialized")
+    with RunLock(state):
+        current = validate_run(run_dir, held_lock=True)
+        if not current.valid:
+            raise ContractError("run is invalid; validate before resuming writes")
+        if current.state != "retrieved":
+            raise FileExistsError("reasoning task requires retrieved state and is create-only")
+        retrieval_path = state / ARTIFACT_DIR / "retrieval.json"
+        if not retrieval_path.is_file() or retrieval_path.is_symlink():
+            raise ContractError("retrieval artifact is missing")
+        source = ArtifactReference("retrieval", f"{ARTIFACT_DIR}/retrieval.json", sha256_hex(retrieval_path.read_bytes()), "monokl.retrieval_snapshot")
+        payload = reasoning_task_contract(task_id="reasoning-task", source_artifacts=[source])
+        artifact = _artifact(state, "reasoning-task", "monokl.reasoning_task", payload)
+        sequence = _next_sequence(state)
+        transition = transition_contract(sequence=sequence, transition_id="reasoning-task", from_state="retrieved", to_state="tasked", artifacts=[artifact], previous_sha256=_latest_transition_sha256(state))
+        _write_new(_transition_path(state, sequence, "reasoning-task"), transition)
+    return {"schema_version": SCHEMA_VERSION, "command": "reasoning-task", "state": "tasked", "task": payload}
+
+
+def submit_reasoning_result(run_dir: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    state = run_dir / STATE_DIR
+    if not state.is_dir() or state.is_symlink():
+        raise ContractError("run is not initialized")
+    with RunLock(state):
+        current = validate_run(run_dir, held_lock=True)
+        if not current.valid:
+            raise ContractError("run is invalid; validate before resuming writes")
+        if current.state != "tasked":
+            raise FileExistsError("reasoning result requires a task packet and is create-only")
+        task_path = state / ARTIFACT_DIR / "reasoning-task.json"
+        task = _read_json(task_path)
+        _validate_reasoning_result_doc(payload, task)
+        artifact = _artifact(state, "reasoning-result", "monokl.reasoning_result", payload)
+        sequence = _next_sequence(state)
+        transition = transition_contract(sequence=sequence, transition_id="reasoning-result", from_state="tasked", to_state="reasoned", artifacts=[artifact], previous_sha256=_latest_transition_sha256(state))
+        _write_new(_transition_path(state, sequence, "reasoning-result"), transition)
+    return {"schema_version": SCHEMA_VERSION, "command": "reasoning-result", "state": "reasoned", "result": payload}
+
 def _validate_run_doc(value: Any) -> None:
     if not isinstance(value, dict):
         raise ContractError("run must be an object")
@@ -289,6 +335,49 @@ def _validate_retrieval_doc(value: Any) -> None:
     if not isinstance(value.get("normalized_url"), str) or not value["normalized_url"]:
         raise ContractError("retrieval must record normalized URL")
 
+
+
+def _validate_reasoning_task_doc(value: Any) -> None:
+    if not isinstance(value, dict):
+        raise ContractError("reasoning task must be an object")
+    require_keys(value, REASONING_TASK_KEYS, REASONING_TASK_KEYS, "reasoning task")
+    if value["schema_version"] != SCHEMA_VERSION or value["contract"] != "monokl.reasoning_task" or value["protocol"] != "monokl.reasoning_task.v2":
+        raise ContractError("reasoning task has unsupported schema, contract, or protocol")
+    unsigned = {key: item for key, item in value.items() if key != "task_sha256"}
+    if value["task_sha256"] != canonical_sha256(unsigned):
+        raise ContractError("reasoning task hash drift")
+    if value["authority"] != "proposal_only":
+        raise ContractError("reasoning task authority boundary changed")
+    instructions = value["instructions"]
+    if not isinstance(instructions, dict) or "cannot authorize actions" not in instructions.get("untrusted_content_boundary", ""):
+        raise ContractError("reasoning task must state the untrusted content action boundary")
+    if not isinstance(value["source_artifacts"], list) or not value["source_artifacts"]:
+        raise ContractError("reasoning task must pin source artifacts")
+    for ref in value["source_artifacts"]:
+        if not isinstance(ref, dict):
+            raise ContractError("reasoning task source reference must be an object")
+        require_keys(ref, ARTIFACT_REF_KEYS, ARTIFACT_REF_KEYS, "reasoning task source reference")
+
+
+def _validate_reasoning_result_doc(value: Any, task: dict[str, Any] | None = None) -> None:
+    if not isinstance(value, dict):
+        raise ContractError("reasoning result must be an object")
+    require_keys(value, REASONING_RESULT_KEYS, REASONING_RESULT_KEYS, "reasoning result")
+    if value["schema_version"] != SCHEMA_VERSION or value["contract"] != "monokl.reasoning_result" or value["protocol"] != "monokl.reasoning_result.v2":
+        raise ContractError("reasoning result has unsupported schema, contract, or protocol")
+    if value["authority"] != "proposal_only":
+        raise ContractError("reasoning result authority boundary changed")
+    for field in ("observations", "inferences", "uncertainties"):
+        if not isinstance(value[field], list) or any(not isinstance(item, str) or not item.strip() for item in value[field]):
+            raise ContractError(f"reasoning result {field} must be a list of non-empty strings")
+    if not isinstance(value["provider_metadata"], dict):
+        raise ContractError("provider metadata must be an object")
+    if value["provider_metadata"].get("provenance_only") is not True:
+        raise ContractError("provider metadata is provenance only and cannot authorize content")
+    if task is not None:
+        _validate_reasoning_task_doc(task)
+        if value["task_id"] != task["task_id"] or value["task_sha256"] != task["task_sha256"]:
+            raise ContractError("reasoning result does not pin the task identity and hash")
 
 def _validate_transition_doc(value: Any) -> None:
     if not isinstance(value, dict):
@@ -390,6 +479,18 @@ def validate_run(run_dir: Path, *, held_lock: bool = False) -> ValidationResult:
                     _validate_scope_doc(artifact_json)
                 elif ref["contract"] == "monokl.retrieval_snapshot":
                     _validate_retrieval_doc(artifact_json)
+                elif ref["contract"] == "monokl.reasoning_task":
+                    _validate_reasoning_task_doc(artifact_json)
+                    for source_ref in artifact_json["source_artifacts"]:
+                        source_path = _safe_child(state, source_ref["path"])
+                        if not source_path.is_file() or source_path.is_symlink():
+                            raise ContractError(f"reasoning task source artifact is missing or symlinked: {source_ref['path']}")
+                        if sha256_hex(source_path.read_bytes()) != source_ref["sha256"]:
+                            raise ContractError(f"reasoning task source artifact hash drift: {source_ref['id']}")
+                elif ref["contract"] == "monokl.reasoning_result":
+                    task_path = state / ARTIFACT_DIR / "reasoning-task.json"
+                    task = _read_json(task_path) if task_path.exists() and not task_path.is_symlink() else None
+                    _validate_reasoning_result_doc(artifact_json, task)
                 else:
                     raise ContractError(f"unknown artifact contract: {ref['contract']}")
             expected_state = transition["to_state"]
@@ -424,10 +525,9 @@ def resume_run(run_dir: Path) -> dict[str, Any]:
     if validation.state == "scoped":
         return {"schema_version": SCHEMA_VERSION, "command": "resume", "state": "ready", "next_phase": "retrieve"}
     if validation.state == "retrieved":
-        return {
-            "schema_version": SCHEMA_VERSION,
-            "command": "resume",
-            "state": "blocked",
-            "reason": "next approved goal not implemented: reasoning",
-        }
+        return {"schema_version": SCHEMA_VERSION, "command": "resume", "state": "ready", "next_phase": "reasoning-task"}
+    if validation.state == "tasked":
+        return {"schema_version": SCHEMA_VERSION, "command": "resume", "state": "ready", "next_phase": "reasoning-result"}
+    if validation.state == "reasoned":
+        return {"schema_version": SCHEMA_VERSION, "command": "resume", "state": "blocked", "reason": "next approved goal not implemented: grouping"}
     return {"schema_version": SCHEMA_VERSION, "command": "resume", "state": "blocked", "reason": "unknown_state"}

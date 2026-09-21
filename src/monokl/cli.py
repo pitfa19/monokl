@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Sequence
 
 from .contracts import Budget, ContractError, Scope, canonical_json_bytes
-from .ledger import STATE_DIR, add_retrieval, add_scope, create_run, resume_run, validate_run
+from .ledger import STATE_DIR, add_retrieval, add_scope, create_reasoning_task, create_run, resume_run, submit_reasoning_result, validate_run
 from .retrieval import Crawl4AIRetriever, RetrievalBudgets, RetrievalRequest, StdlibRetriever
 
 SCOPE_FILE = "artifacts/scope.json"
@@ -95,6 +95,11 @@ def parser() -> argparse.ArgumentParser:
     validate.add_argument("run_dir", type=Path)
     resume = commands.add_parser("resume")
     resume.add_argument("run_dir", type=Path)
+    task = commands.add_parser("reasoning-task")
+    task.add_argument("run_dir", type=Path)
+    result = commands.add_parser("reasoning-result")
+    result.add_argument("run_dir", type=Path)
+    result.add_argument("result_json", type=Path)
     retrieve = commands.add_parser("retrieve")
     retrieve.add_argument("run_dir", type=Path)
     retrieve.add_argument("url")
@@ -118,6 +123,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             result = validate_run(args.run_dir).to_dict()
         elif args.command == "resume":
             result = resume_run(args.run_dir)
+        elif args.command == "reasoning-task":
+            result = create_reasoning_task(args.run_dir)
+        elif args.command == "reasoning-result":
+            result = submit_reasoning_result(args.run_dir, json.loads(args.result_json.read_text(encoding="utf-8")))
         elif args.command == "retrieve":
             result = retrieve_run(
                 args.run_dir,

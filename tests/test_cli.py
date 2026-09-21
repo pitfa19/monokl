@@ -9,7 +9,7 @@ from urllib.error import HTTPError, URLError
 
 from monokl.cli import init_run, main, plan_run, retrieve_run, status
 from monokl.contracts import canonical_sha256, sha256_hex
-from monokl.ledger import RunLock, resume_run, validate_run
+from monokl.ledger import RunLock, create_reasoning_task, resume_run, submit_reasoning_result, validate_run
 from monokl.retrieval import Crawl4AIRetriever, RetrievalBudgets, RetrievalRequest, StdlibRetriever, browser_isolation_policy, check_public_url
 
 
@@ -287,7 +287,7 @@ class MonoklCliTests(unittest.TestCase):
             plan_run(run, "question", [], [], 1)
             result = retrieve_run(run, "https://example.com/a", max_bytes=100, max_redirects=3, timeout=1, allowed_host=["example.com"])
             self.assertEqual(result["state"], "retrieved")
-            self.assertEqual(resume_run(run)["reason"], "next approved goal not implemented: reasoning")
+            self.assertEqual(resume_run(run)["next_phase"], "reasoning-task")
             validation = validate_run(run)
             self.assertTrue(validation.valid)
             manifest = result["retrieval"]
@@ -297,6 +297,108 @@ class MonoklCliTests(unittest.TestCase):
             self.assertIn("crawl4ai_config_digest", manifest)
             self.assertEqual(manifest["content_sha256"], again["content_sha256"])
             self.assertEqual(manifest["normalized_markdown_sha256"], again["normalized_markdown_sha256"])
+
+
+    def _retrieved_run(self, root: str) -> Path:
+        run = Path(root) / "run"
+        init_run(run)
+        plan_run(run, "question", [], [], 1)
+        body = b"<html><body>Observation source</body></html>"
+        with mock.patch("monokl.retrieval.socket.getaddrinfo", side_effect=public_dns), mock.patch(
+            "monokl.retrieval.build_opener", return_value=FakeOpener([FakeResponse("https://example.com/a", body)])
+        ):
+            retrieve_run(run, "https://example.com/a", max_bytes=100, max_redirects=3, timeout=1, allowed_host=["example.com"])
+        return run
+
+    def _valid_reasoning_result(self, task: dict) -> dict:
+        return {
+            "schema_version": 1,
+            "contract": "monokl.reasoning_result",
+            "protocol": "monokl.reasoning_result.v2",
+            "task_id": task["task_id"],
+            "task_sha256": task["task_sha256"],
+            "observations": ["Pinned retrieval contains a source document."],
+            "inferences": ["The source is relevant enough for a draft finding."],
+            "uncertainties": ["No independent corroboration has been performed."],
+            "provider_metadata": {"provenance_only": True, "provider": "fixture", "model": "none"},
+            "authority": "proposal_only",
+        }
+
+    def test_reasoning_task_and_result_normal_workflow(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            run = self._retrieved_run(root)
+            task_result = create_reasoning_task(run)
+            task = task_result["task"]
+            self.assertEqual(resume_run(run)["next_phase"], "reasoning-result")
+            self.assertEqual(task["protocol"], "monokl.reasoning_task.v2")
+            self.assertIn("cannot authorize actions", task["instructions"]["untrusted_content_boundary"])
+            self.assertEqual(task["source_artifacts"][0]["path"], "artifacts/retrieval.json")
+            result = submit_reasoning_result(run, self._valid_reasoning_result(task))
+            self.assertEqual(result["state"], "reasoned")
+            self.assertEqual(resume_run(run)["reason"], "next approved goal not implemented: grouping")
+            self.assertTrue(validate_run(run).valid)
+
+    def test_reasoning_result_wrong_hash_unknown_fields_and_malformed_output_fail(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            run = self._retrieved_run(root)
+            task = create_reasoning_task(run)["task"]
+            bad_hash = self._valid_reasoning_result(task)
+            bad_hash["task_sha256"] = "0" * 64
+            with self.assertRaises(ValueError):
+                submit_reasoning_result(run, bad_hash)
+            unknown = self._valid_reasoning_result(task)
+            unknown["extra"] = True
+            with self.assertRaises(ValueError):
+                submit_reasoning_result(run, unknown)
+            malformed = self._valid_reasoning_result(task)
+            malformed["observations"] = "not a list"
+            with self.assertRaises(ValueError):
+                submit_reasoning_result(run, malformed)
+
+    def test_reasoning_create_only_and_provider_metadata_is_provenance_only(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            run = self._retrieved_run(root)
+            task = create_reasoning_task(run)["task"]
+            with self.assertRaises(FileExistsError):
+                create_reasoning_task(run)
+            not_provenance = self._valid_reasoning_result(task)
+            not_provenance["provider_metadata"] = {"provenance_only": False, "provider": "fixture"}
+            with self.assertRaises(ValueError):
+                submit_reasoning_result(run, not_provenance)
+            submit_reasoning_result(run, self._valid_reasoning_result(task))
+            with self.assertRaises(FileExistsError):
+                submit_reasoning_result(run, self._valid_reasoning_result(task))
+
+    def test_reasoning_task_source_hash_drift_and_partial_artifact_block_resume(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            run = self._retrieved_run(root)
+            create_reasoning_task(run)
+            retrieval_path = run / ".monokl" / "artifacts" / "retrieval.json"
+            retrieval = json.loads(retrieval_path.read_text())
+            retrieval["status"] = "partial"
+            retrieval_path.write_text(json.dumps(retrieval, sort_keys=True) + "\n", encoding="utf-8")
+            validation = validate_run(run)
+            self.assertFalse(validation.valid)
+            self.assertIn("hash drift", validation.errors[0].message)
+            self.assertEqual(resume_run(run)["reason"], "validation_failed")
+        with tempfile.TemporaryDirectory() as root:
+            run = self._retrieved_run(root)
+            create_reasoning_task(run)
+            result_path = run / ".monokl" / "artifacts" / "reasoning-result.json"
+            result_path.write_text('{"schema_version":', encoding="utf-8")
+            validation = validate_run(run)
+            self.assertFalse(validation.valid)
+            self.assertIn("orphan_artifact", {error.code for error in validation.errors})
+
+    def test_cli_reasoning_task_and_result_commands(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            run = self._retrieved_run(root)
+            self.assertEqual(main(["reasoning-task", str(run)]), 0)
+            task = json.loads((run / ".monokl" / "artifacts" / "reasoning-task.json").read_text())
+            result_path = Path(root) / "result.json"
+            result_path.write_text(json.dumps(self._valid_reasoning_result(task)), encoding="utf-8")
+            self.assertEqual(main(["reasoning-result", str(run), str(result_path)]), 0)
+            self.assertTrue(validate_run(run).valid)
 
     def test_crawl4ai_fake_boundary_records_limits_and_identity(self) -> None:
         body = "# ok"
