@@ -37,7 +37,7 @@ from hyperresearch import __version__
 
 def _version_callback(value: bool) -> None:
     if value:
-        typer.echo(f"monokl v{__version__}")
+        typer.echo(f"monokl v{__version__} (hyperresearch v{__version__} compatible)")
         raise typer.Exit()
 
 
