@@ -176,3 +176,48 @@ def reasoning_task_contract(*, task_id: str, source_artifacts: list[ArtifactRefe
         "authority": "proposal_only",
     }
     return {**payload, "task_sha256": canonical_sha256(payload)}
+
+
+
+def source_inventory_contract(*, sources: list[dict[str, Any]], duplicates: list[dict[str, Any]], exclusions: list[dict[str, Any]] | None = None) -> dict[str, Any]:
+    payload = {
+        "schema_version": SCHEMA_VERSION,
+        "contract": "monokl.source_inventory",
+        "protocol": "monokl.source_inventory.v2",
+        "sources": sources,
+        "duplicates": duplicates,
+        "exclusions": exclusions or [],
+        "deduplication_policy": "deterministic: every duplicate names one retained source and records rationale; retained sources are sorted by source_id",
+        "authority": "proposal_only",
+    }
+    return {**payload, "inventory_sha256": canonical_sha256(payload)}
+
+
+def source_groups_contract(*, groups: list[dict[str, Any]], excluded_source_ids: list[dict[str, str]], inventory_sha256: str, allow_overlap: bool = False) -> dict[str, Any]:
+    payload = {
+        "schema_version": SCHEMA_VERSION,
+        "contract": "monokl.source_groups",
+        "protocol": "monokl.source_groups.v2",
+        "inventory_sha256": inventory_sha256,
+        "groups": groups,
+        "excluded_source_ids": excluded_source_ids,
+        "policy": {"allow_overlap": allow_overlap, "every_retained_source_assigned_or_explicitly_excluded": True},
+        "author_boundary": "may be authored by any agent or human; proposal only until owner approval artifact is recorded",
+        "authority": "proposal_only",
+    }
+    return {**payload, "groups_sha256": canonical_sha256(payload)}
+
+
+def group_approval_contract(*, owner: str, inventory_sha256: str, groups_sha256: str, decision: bool, rationale: str) -> dict[str, Any]:
+    payload = {
+        "schema_version": SCHEMA_VERSION,
+        "contract": "monokl.source_group_approval",
+        "protocol": "monokl.source_group_approval.v2",
+        "owner": owner,
+        "decision": decision,
+        "inventory_sha256": inventory_sha256,
+        "groups_sha256": groups_sha256,
+        "rationale": rationale,
+        "authority": "owner_approval_only",
+    }
+    return {**payload, "approval_sha256": canonical_sha256(payload)}

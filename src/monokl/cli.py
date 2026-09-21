@@ -8,7 +8,7 @@ from pathlib import Path
 from typing import Sequence
 
 from .contracts import Budget, ContractError, Scope, canonical_json_bytes
-from .ledger import STATE_DIR, add_retrieval, add_scope, create_reasoning_task, create_run, resume_run, submit_reasoning_result, validate_run
+from .ledger import STATE_DIR, add_retrieval, add_scope, approve_source_groups, create_reasoning_task, create_run, create_source_groups, create_source_inventory, resume_run, submit_reasoning_result, validate_run
 from .retrieval import Crawl4AIRetriever, RetrievalBudgets, RetrievalRequest, StdlibRetriever
 
 SCOPE_FILE = "artifacts/scope.json"
@@ -100,6 +100,15 @@ def parser() -> argparse.ArgumentParser:
     result = commands.add_parser("reasoning-result")
     result.add_argument("run_dir", type=Path)
     result.add_argument("result_json", type=Path)
+    inventory = commands.add_parser("source-inventory")
+    inventory.add_argument("run_dir", type=Path)
+    inventory.add_argument("inventory_json", type=Path, nargs="?")
+    groups = commands.add_parser("source-groups")
+    groups.add_argument("run_dir", type=Path)
+    groups.add_argument("groups_json", type=Path)
+    approval = commands.add_parser("source-group-approval")
+    approval.add_argument("run_dir", type=Path)
+    approval.add_argument("approval_json", type=Path)
     retrieve = commands.add_parser("retrieve")
     retrieve.add_argument("run_dir", type=Path)
     retrieve.add_argument("url")
@@ -127,6 +136,13 @@ def main(argv: Sequence[str] | None = None) -> int:
             result = create_reasoning_task(args.run_dir)
         elif args.command == "reasoning-result":
             result = submit_reasoning_result(args.run_dir, json.loads(args.result_json.read_text(encoding="utf-8")))
+        elif args.command == "source-inventory":
+            payload = json.loads(args.inventory_json.read_text(encoding="utf-8")) if args.inventory_json else None
+            result = create_source_inventory(args.run_dir, payload)
+        elif args.command == "source-groups":
+            result = create_source_groups(args.run_dir, json.loads(args.groups_json.read_text(encoding="utf-8")))
+        elif args.command == "source-group-approval":
+            result = approve_source_groups(args.run_dir, json.loads(args.approval_json.read_text(encoding="utf-8")))
         elif args.command == "retrieve":
             result = retrieve_run(
                 args.run_dir,
