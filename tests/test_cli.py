@@ -1,4 +1,6 @@
+import importlib.metadata
 import json
+import os
 import tempfile
 import unittest
 from pathlib import Path
@@ -8,7 +10,7 @@ from urllib.error import HTTPError, URLError
 from monokl.cli import init_run, main, plan_run, retrieve_run, status
 from monokl.contracts import canonical_sha256
 from monokl.ledger import RunLock, resume_run, validate_run
-from monokl.retrieval import RetrievalBudgets, RetrievalRequest, StdlibRetriever, browser_isolation_policy, check_public_url
+from monokl.retrieval import Crawl4AIRetriever, RetrievalBudgets, RetrievalRequest, StdlibRetriever, browser_isolation_policy, check_public_url
 
 
 class FakeResponse:
@@ -247,8 +249,8 @@ class MonoklCliTests(unittest.TestCase):
             with self.assertRaises(ValueError):
                 check_public_url("https://example.com", budgets)
 
-    def test_refuses_credentials_profile_proxy_llm_js_and_download(self) -> None:
-        for field in ["credentials", "profile", "proxy", "llm", "javascript", "download"]:
+    def test_refuses_credentials_profile_proxy_llm_js_download_cdp_and_storage(self) -> None:
+        for field in ["credentials", "profile", "proxy", "llm", "javascript", "download", "cdp", "storage"]:
             with self.subTest(field=field):
                 req = RetrievalRequest("https://example.com", RetrievalBudgets(), {field: True})
                 with self.assertRaises(ValueError):
@@ -262,6 +264,11 @@ class MonoklCliTests(unittest.TestCase):
         self.assertFalse(policy["downloads"])
         self.assertFalse(policy["arbitrary_javascript"])
         self.assertFalse(policy["llm_api"])
+        self.assertFalse(policy["cdp"])
+        self.assertFalse(policy["storage_state"])
+        self.assertFalse(policy["ignore_https_errors"])
+        self.assertEqual(policy["cache_mode"], "BYPASS")
+        self.assertTrue(policy["network"]["browser_request_interception"])
         self.assertTrue(policy["network"]["dns_checks_before_and_after_redirects"])
         self.assertEqual(policy["resources"]["child_process_limit"], 1)
 
@@ -285,8 +292,44 @@ class MonoklCliTests(unittest.TestCase):
             manifest = result["retrieval"]
             again = StdlibRetriever().retrieve(RetrievalRequest("https://example.com/a", RetrievalBudgets(max_bytes_per_page=100, max_redirects=3, timeout_seconds=1, allowed_hosts=("example.com",)), {}))
             self.assertEqual(manifest["cache_key"], again["cache_key"])
+            self.assertEqual(manifest["normalized_url"], "https://example.com/a")
+            self.assertIn("crawl4ai_config_digest", manifest)
             self.assertEqual(manifest["content_sha256"], again["content_sha256"])
             self.assertEqual(manifest["normalized_markdown_sha256"], again["normalized_markdown_sha256"])
+
+    def test_crawl4ai_fake_boundary_records_limits_and_identity(self) -> None:
+        body = "# ok"
+        fake = {
+            "status": "ok",
+            "final_url": "https://example.com/a",
+            "http_status": 200,
+            "redirects": [],
+            "markdown": body,
+            "content_sha256": "0" * 64,
+            "observed_limits": {"timeout_seconds": 1, "cpu_seconds": 3, "memory_bytes": 1, "temp_bytes": 1, "process_group": True},
+        }
+        with mock.patch("monokl.retrieval.importlib.metadata.version", return_value="1.2.3"), mock.patch(
+            "monokl.retrieval.socket.getaddrinfo", side_effect=public_dns
+        ), mock.patch("monokl.retrieval._run_crawl4ai_subprocess", return_value=fake):
+            manifest = Crawl4AIRetriever("1.2.3").retrieve(
+                RetrievalRequest("https://EXAMPLE.com/a#frag", RetrievalBudgets(timeout_seconds=1, allowed_hosts=("example.com",)), {})
+            )
+        self.assertEqual(manifest["status"], "ok")
+        self.assertEqual(manifest["crawl4ai_version"], "1.2.3")
+        self.assertEqual(manifest["normalized_url"], "https://example.com/a")
+        self.assertTrue(manifest["observed_limits"]["process_group"])
+        self.assertEqual(manifest["browser_isolation_policy"]["cache_mode"], "BYPASS")
+
+    def test_crawl4ai_fake_boundary_refuses_browser_private_final_url(self) -> None:
+        fake = {"status": "ok", "final_url": "http://127.0.0.1/private", "markdown": "x", "observed_limits": {"process_group": True}}
+        def dns(host, *args, **kwargs):
+            return private_dns() if host == "127.0.0.1" else public_dns()
+        with mock.patch("monokl.retrieval.importlib.metadata.version", return_value="1.2.3"), mock.patch(
+            "monokl.retrieval.socket.getaddrinfo", side_effect=dns
+        ), mock.patch("monokl.retrieval._run_crawl4ai_subprocess", return_value=fake):
+            manifest = Crawl4AIRetriever("1.2.3").retrieve(RetrievalRequest("https://example.com", RetrievalBudgets(), {}))
+        self.assertEqual(manifest["status"], "error")
+        self.assertIn("private_or_local_address_refused", manifest["error"]["code"])
 
     def test_redirect_to_private_is_refused(self) -> None:
         with mock.patch("monokl.retrieval.socket.getaddrinfo", side_effect=lambda host, *a, **k: private_dns() if host == "127.0.0.1" else public_dns()), mock.patch(
@@ -337,6 +380,17 @@ class MonoklCliTests(unittest.TestCase):
         manifest = StdlibRetriever().retrieve(RetrievalRequest("https://example.com", RetrievalBudgets(allowed_hosts=("example.com",)), {}))
         self.assertIn(manifest["status"], {"ok", "partial"})
         self.assertEqual(manifest["preflight"]["host"], "example.com")
+
+    @unittest.skipUnless(bool(os.environ.get("MONOKL_LIVE_CRAWL4AI")), "set MONOKL_LIVE_CRAWL4AI=1 to run opt-in Crawl4AI crawl")
+    def test_opt_in_installed_crawl4ai_public_crawl(self) -> None:
+        try:
+            version = importlib.metadata.version("crawl4ai")
+        except importlib.metadata.PackageNotFoundError:
+            self.skipTest("crawl4ai is not installed")
+        manifest = Crawl4AIRetriever(version).retrieve(RetrievalRequest("https://example.com", RetrievalBudgets(allowed_hosts=("example.com",)), {}))
+        self.assertIn(manifest["status"], {"ok", "partial", "error"})
+        self.assertEqual(manifest["crawl4ai_version"], version)
+        self.assertIsNotNone(manifest["observed_limits"])
 
 
 if __name__ == "__main__":
