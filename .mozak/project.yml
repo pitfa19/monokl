@@ -1,0 +1,15 @@
+version: 1
+framework_contract_version: 1
+project:
+  id: monokl
+  name: "Monokl"
+repository:
+  revision: 0000000000000000000000000000000000000000
+owned_paths:
+  - .mozak
+  - README.md
+  - LICENSE
+  - pyproject.toml
+  - src
+  - tests
+  - docs
