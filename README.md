@@ -1,5 +1,5 @@
 <p align="center">
-  <img src="docs/assets/monokl.jpeg" alt="Monokl mirror" width="520">
+  <img src="docs/assets/monokl.png" alt="Monokl mirror" width="520">
 </p>
 
 # Monokl
