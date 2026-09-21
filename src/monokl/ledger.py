@@ -4,6 +4,7 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from dataclasses import dataclass
 from pathlib import Path
 from typing import Any
@@ -30,7 +31,17 @@ LOCK_FILE = ".write-lock"
 
 RUN_KEYS = {"schema_version", "contract", "run_id", "state", "migration_policy"}
 SCOPE_KEYS = {"schema_version", "question", "included", "excluded", "budget", "authority", "retrieved_content_is_untrusted"}
-TRANSITION_KEYS = {"schema_version", "contract", "sequence", "id", "from_state", "to_state", "artifacts"}
+TRANSITION_KEYS = {
+    "schema_version",
+    "contract",
+    "sequence",
+    "id",
+    "from_state",
+    "to_state",
+    "artifacts",
+    "previous_sha256",
+    "sha256",
+}
 ARTIFACT_REF_KEYS = {"id", "path", "sha256", "contract"}
 ALLOWED_TRANSITIONS = {("absent", "initialized"), ("initialized", "scoped")}
 
@@ -111,15 +122,21 @@ def _read_json(path: Path) -> Any:
 
 
 def _transition_path(state: Path, sequence: int, transition_id: str) -> Path:
-    safe_id = transition_id.replace("_", "-")
-    if "/" in safe_id or "\\" in safe_id or safe_id in {".", "..", ""}:
+    if re.fullmatch(r"[a-z0-9][a-z0-9-]*", transition_id) is None:
         raise ContractError("transition id must be path-safe")
-    return state / TRANSITION_DIR / f"{sequence:06d}-{safe_id}.json"
+    return state / TRANSITION_DIR / f"{sequence:06d}-{transition_id}.json"
 
 
 def _next_sequence(state: Path) -> int:
     transitions = sorted((state / TRANSITION_DIR).glob("*.json"))
     return len(transitions) + 1
+
+
+def _latest_transition_sha256(state: Path) -> str | None:
+    transitions = sorted((state / TRANSITION_DIR).glob("*.json"))
+    if not transitions:
+        return None
+    return sha256_hex(transitions[-1].read_bytes())
 
 
 def _artifact(state: Path, artifact_id: str, contract: str, payload: object) -> ArtifactReference:
@@ -151,6 +168,7 @@ def create_run(run_dir: Path) -> dict[str, Any]:
             from_state="absent",
             to_state="initialized",
             artifacts=[ArtifactReference("run", RUN_FILE, canonical_sha256(run), "monokl.run")],
+            previous_sha256=None,
         )
         _write_new(_transition_path(state, sequence, "init"), transition)
     return {"schema_version": SCHEMA_VERSION, "command": "init", "state": "initialized", "run": run}
@@ -161,7 +179,7 @@ def add_scope(run_dir: Path, scope: Scope) -> dict[str, Any]:
     if not state.is_dir() or state.is_symlink():
         raise ContractError("run is not initialized")
     with RunLock(state):
-        current = validate_run(run_dir)
+        current = validate_run(run_dir, held_lock=True)
         if not current.valid:
             raise ContractError("run is invalid; validate before resuming writes")
         if current.state != "initialized":
@@ -175,6 +193,7 @@ def add_scope(run_dir: Path, scope: Scope) -> dict[str, Any]:
             from_state="initialized",
             to_state="scoped",
             artifacts=[artifact],
+            previous_sha256=_latest_transition_sha256(state),
         )
         _write_new(_transition_path(state, sequence, "plan-scope"), transition)
     return {"schema_version": SCHEMA_VERSION, "command": "plan", "state": "scoped", "scope": payload}
@@ -206,6 +225,16 @@ def _validate_transition_doc(value: Any) -> None:
     require_keys(value, TRANSITION_KEYS, TRANSITION_KEYS, "transition")
     if value["schema_version"] != SCHEMA_VERSION or value["contract"] != "monokl.transition":
         raise ContractError("transition has unsupported schema or contract")
+    if isinstance(value["sequence"], bool) or not isinstance(value["sequence"], int) or value["sequence"] <= 0:
+        raise ContractError("transition sequence must be a positive integer")
+    if re.fullmatch(r"[a-z0-9][a-z0-9-]*", value["id"]) is None:
+        raise ContractError("transition id must be path-safe")
+    unsigned = {key: item for key, item in value.items() if key != "sha256"}
+    if value["sha256"] != canonical_sha256(unsigned):
+        raise ContractError("transition integrity hash drift")
+    previous = value["previous_sha256"]
+    if previous is not None and (not isinstance(previous, str) or re.fullmatch(r"[0-9a-f]{64}", previous) is None):
+        raise ContractError("transition previous_sha256 must be null or a SHA-256 hex digest")
     if not isinstance(value["artifacts"], list):
         raise ContractError("transition artifacts must be a list")
     for ref in value["artifacts"]:
@@ -218,11 +247,30 @@ def _record(errors: list[ValidationErrorRecord], code: str, message: str, path: 
     errors.append(ValidationErrorRecord(code, message, str(path) if path else None))
 
 
-def validate_run(run_dir: Path) -> ValidationResult:
+def validate_run(run_dir: Path, *, held_lock: bool = False) -> ValidationResult:
     state = run_dir / STATE_DIR
     errors: list[ValidationErrorRecord] = []
     if not state.is_dir() or state.is_symlink():
         return ValidationResult(False, "absent", [ValidationErrorRecord("missing_state", "run state directory is missing")])
+    lock_path = state / LOCK_FILE
+    if lock_path.exists() or lock_path.is_symlink():
+        if not held_lock:
+            if lock_path.is_symlink():
+                _record(errors, "invalid_lock", "write lock must not be a symlink", lock_path)
+            else:
+                try:
+                    owner = lock_path.read_text(encoding="ascii").strip()
+                    pid = int(owner)
+                    os.kill(pid, 0)
+                    message = f"write lock is active for process {pid}"
+                    code = "write_in_progress"
+                except ProcessLookupError:
+                    message = "stale write lock found; verify no writer is active, then remove .monokl/.write-lock"
+                    code = "stale_lock"
+                except Exception:
+                    message = "write lock is malformed or unsafe; inspect .monokl/.write-lock before removal"
+                    code = "invalid_lock"
+                _record(errors, code, message, lock_path)
     for child in [state / ARTIFACT_DIR, state / TRANSITION_DIR]:
         if not child.is_dir() or child.is_symlink():
             _record(errors, "invalid_directory", "required state subdirectory is missing or a symlink", child)
@@ -237,11 +285,15 @@ def validate_run(run_dir: Path) -> ValidationResult:
             _record(errors, "invalid_run", str(error), run_path)
     expected_state = "absent"
     seen_sequences: list[int] = []
+    previous_transition_sha256: str | None = None
+    referenced_artifacts: set[str] = set()
     for path in sorted((state / TRANSITION_DIR).glob("*.json")) if (state / TRANSITION_DIR).is_dir() else []:
         try:
             transition = _read_json(path)
             _validate_transition_doc(transition)
             sequence = transition["sequence"]
+            if path != _transition_path(state, sequence, transition["id"]):
+                raise ContractError("transition filename does not match its sequence and id")
             seen_sequences.append(sequence)
             if sequence != len(seen_sequences):
                 raise ContractError("transition sequence is not contiguous")
@@ -250,7 +302,10 @@ def validate_run(run_dir: Path) -> ValidationResult:
             edge = (transition["from_state"], transition["to_state"])
             if edge not in ALLOWED_TRANSITIONS:
                 raise ContractError(f"invalid transition order: {edge[0]} -> {edge[1]}")
+            if transition["previous_sha256"] != previous_transition_sha256:
+                raise ContractError("transition chain does not match the previous transition")
             for ref in transition["artifacts"]:
+                referenced_artifacts.add(ref["path"])
                 artifact_path = _safe_child(state, ref["path"])
                 if not artifact_path.is_file() or artifact_path.is_symlink():
                     raise ContractError(f"artifact is missing or symlinked: {ref['path']}")
@@ -265,10 +320,19 @@ def validate_run(run_dir: Path) -> ValidationResult:
                 else:
                     raise ContractError(f"unknown artifact contract: {ref['contract']}")
             expected_state = transition["to_state"]
+            previous_transition_sha256 = sha256_hex(path.read_bytes())
         except Exception as error:
             _record(errors, "invalid_transition", str(error), path)
     if not seen_sequences:
         _record(errors, "missing_transition", "no transitions were recorded", state / TRANSITION_DIR)
+    artifact_root = state / ARTIFACT_DIR
+    if artifact_root.is_dir() and not artifact_root.is_symlink():
+        for artifact_path in artifact_root.iterdir():
+            relative = artifact_path.relative_to(state).as_posix()
+            if artifact_path.is_symlink() or not artifact_path.is_file():
+                _record(errors, "invalid_artifact", "artifact directory contains a symlink or non-file entry", artifact_path)
+            elif relative not in referenced_artifacts:
+                _record(errors, "orphan_artifact", "artifact is not referenced by any valid transition", artifact_path)
     return ValidationResult(not errors, expected_state if not errors else "invalid", errors)
 
 

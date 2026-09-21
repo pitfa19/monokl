@@ -117,10 +117,11 @@ def transition_contract(
     from_state: str,
     to_state: str,
     artifacts: list[ArtifactReference],
+    previous_sha256: str | None,
 ) -> dict[str, Any]:
-    if sequence <= 0:
+    if isinstance(sequence, bool) or not isinstance(sequence, int) or sequence <= 0:
         raise ContractError("transition sequence must be positive")
-    return {
+    payload = {
         "schema_version": SCHEMA_VERSION,
         "contract": "monokl.transition",
         "sequence": sequence,
@@ -128,4 +129,6 @@ def transition_contract(
         "from_state": from_state,
         "to_state": to_state,
         "artifacts": [artifact.to_dict() for artifact in artifacts],
+        "previous_sha256": previous_sha256,
     }
+    return {**payload, "sha256": canonical_sha256(payload)}
