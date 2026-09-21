@@ -2,10 +2,60 @@ import json
 import tempfile
 import unittest
 from pathlib import Path
+from unittest import mock
+from urllib.error import HTTPError, URLError
 
-from monokl.cli import init_run, main, plan_run, status
+from monokl.cli import init_run, main, plan_run, retrieve_run, status
 from monokl.contracts import canonical_sha256
 from monokl.ledger import RunLock, resume_run, validate_run
+from monokl.retrieval import RetrievalBudgets, RetrievalRequest, StdlibRetriever, browser_isolation_policy, check_public_url
+
+
+class FakeResponse:
+    def __init__(self, url: str, body: bytes, status: int = 200) -> None:
+        self.url = url
+        self.body = body
+        self.status = status
+
+    def __enter__(self):
+        return self
+
+    def __exit__(self, exc_type, exc, tb):
+        return False
+
+    def getcode(self) -> int:
+        return self.status
+
+    def geturl(self) -> str:
+        return self.url
+
+    def read(self, limit: int) -> bytes:
+        return self.body[:limit]
+
+
+class FakeOpener:
+    def __init__(self, outcomes):
+        self.outcomes = list(outcomes)
+
+    def open(self, request, timeout):
+        if not self.outcomes:
+            raise AssertionError("unexpected request")
+        outcome = self.outcomes.pop(0)
+        if isinstance(outcome, Exception):
+            raise outcome
+        return outcome
+
+
+def public_dns(*args, **kwargs):
+    return [(None, None, None, None, ("93.184.216.34", 443))]
+
+
+def private_dns(*args, **kwargs):
+    return [(None, None, None, None, ("127.0.0.1", 80))]
+
+
+def redirect(location: str, code: int = 302) -> HTTPError:
+    return HTTPError("http://example.com", code, "redirect", {"Location": location}, None)
 
 
 class MonoklCliTests(unittest.TestCase):
@@ -23,7 +73,7 @@ class MonoklCliTests(unittest.TestCase):
             scope = json.loads((run / ".monokl" / "artifacts" / "scope.json").read_text())
             self.assertEqual(scope["budget"]["max_sources"], 10)
             self.assertTrue(scope["retrieved_content_is_untrusted"])
-            self.assertEqual(resume_run(run)["state"], "blocked")
+            self.assertEqual(resume_run(run)["next_phase"], "retrieve")
 
     def test_create_only_and_invalid_budget_fail(self) -> None:
         with tempfile.TemporaryDirectory() as root:
@@ -179,10 +229,114 @@ class MonoklCliTests(unittest.TestCase):
             self.assertEqual(main(["validate", str(run)]), 0)
             self.assertEqual(main(["resume", str(run)]), 0)
 
+    def test_url_policy_refuses_local_private_and_custom_schemes(self) -> None:
+        budgets = RetrievalBudgets()
+        for url in [
+            "http://127.0.0.1",
+            "http://[::1]",
+            "http://10.0.0.1",
+            "http://169.254.169.254",
+            "file:///etc/passwd",
+            "data:text/plain,hi",
+            "custom://example.com",
+        ]:
+            with self.subTest(url=url):
+                with self.assertRaises(ValueError):
+                    check_public_url(url, budgets)
+        with mock.patch("monokl.retrieval.socket.getaddrinfo", side_effect=private_dns):
+            with self.assertRaises(ValueError):
+                check_public_url("https://example.com", budgets)
+
+    def test_refuses_credentials_profile_proxy_llm_js_and_download(self) -> None:
+        for field in ["credentials", "profile", "proxy", "llm", "javascript", "download"]:
+            with self.subTest(field=field):
+                req = RetrievalRequest("https://example.com", RetrievalBudgets(), {field: True})
+                with self.assertRaises(ValueError):
+                    req.validate()
+
+    def test_browser_isolation_policy_records_boundaries(self) -> None:
+        policy = browser_isolation_policy(RetrievalBudgets(max_bytes_per_page=12, max_redirects=2, timeout_seconds=3))
+        self.assertFalse(policy["credentials"])
+        self.assertFalse(policy["persistent_profile"])
+        self.assertFalse(policy["proxy"])
+        self.assertFalse(policy["downloads"])
+        self.assertFalse(policy["arbitrary_javascript"])
+        self.assertFalse(policy["llm_api"])
+        self.assertTrue(policy["network"]["dns_checks_before_and_after_redirects"])
+        self.assertEqual(policy["resources"]["child_process_limit"], 1)
+
+    def test_retrieve_success_is_append_only_and_deterministic(self) -> None:
+        body = b"<html><title>T</title><body>Hello</body></html>"
+        with tempfile.TemporaryDirectory() as root, mock.patch("monokl.retrieval.socket.getaddrinfo", side_effect=public_dns), mock.patch(
+            "monokl.retrieval.build_opener",
+            side_effect=[
+                FakeOpener([FakeResponse("https://example.com/a", body)]),
+                FakeOpener([FakeResponse("https://example.com/a", body)]),
+            ],
+        ):
+            run = Path(root) / "run"
+            init_run(run)
+            plan_run(run, "question", [], [], 1)
+            result = retrieve_run(run, "https://example.com/a", max_bytes=100, max_redirects=3, timeout=1, allowed_host=["example.com"])
+            self.assertEqual(result["state"], "retrieved")
+            self.assertEqual(resume_run(run)["reason"], "next approved goal not implemented: reasoning")
+            validation = validate_run(run)
+            self.assertTrue(validation.valid)
+            manifest = result["retrieval"]
+            again = StdlibRetriever().retrieve(RetrievalRequest("https://example.com/a", RetrievalBudgets(max_bytes_per_page=100, max_redirects=3, timeout_seconds=1, allowed_hosts=("example.com",)), {}))
+            self.assertEqual(manifest["cache_key"], again["cache_key"])
+            self.assertEqual(manifest["content_sha256"], again["content_sha256"])
+            self.assertEqual(manifest["normalized_markdown_sha256"], again["normalized_markdown_sha256"])
+
+    def test_redirect_to_private_is_refused(self) -> None:
+        with mock.patch("monokl.retrieval.socket.getaddrinfo", side_effect=lambda host, *a, **k: private_dns() if host == "127.0.0.1" else public_dns()), mock.patch(
+            "monokl.retrieval.build_opener", return_value=FakeOpener([redirect("http://127.0.0.1/private")])
+        ):
+            manifest = StdlibRetriever().retrieve(RetrievalRequest("https://example.com", RetrievalBudgets(), {}))
+            self.assertEqual(manifest["status"], "error")
+            self.assertIn("private_or_local_address_refused", manifest["error"]["code"])
+
+    def test_timeout_redirect_loop_http_failure_malformed_and_oversized_are_artifacts(self) -> None:
+        cases = [
+            (FakeOpener([URLError("timed out")]), "timeout"),
+            (FakeOpener([redirect("https://example.com")]), "redirect_loop"),
+            (FakeOpener([HTTPError("https://example.com", 500, "server", {}, None)]), "http_failure"),
+            (FakeOpener([FakeResponse("https://example.com", b"not html")]), "malformed_page"),
+            (FakeOpener([FakeResponse("https://example.com", b"<html>" + b"a" * 20)]), "oversized_content"),
+        ]
+        for opener, code in cases:
+            with self.subTest(code=code), mock.patch("monokl.retrieval.socket.getaddrinfo", side_effect=public_dns), mock.patch(
+                "monokl.retrieval.build_opener", return_value=opener
+            ):
+                manifest = StdlibRetriever().retrieve(RetrievalRequest("https://example.com", RetrievalBudgets(max_bytes_per_page=10, max_redirects=1), {}))
+                self.assertIn(manifest["status"], {"partial", "error"})
+                self.assertEqual(manifest["error"]["code"], code)
+
+    def test_cli_retrieve_route_and_crawl4ai_optional_without_dependency(self) -> None:
+        body = b"<html><body>ok</body></html>"
+        with tempfile.TemporaryDirectory() as root, mock.patch("monokl.retrieval.socket.getaddrinfo", side_effect=public_dns), mock.patch(
+            "monokl.retrieval.build_opener", return_value=FakeOpener([FakeResponse("https://example.com", body)])
+        ):
+            run = Path(root) / "run"
+            self.assertEqual(main(["init", str(run)]), 0)
+            self.assertEqual(main(["plan", str(run), "question"]), 0)
+            self.assertEqual(main(["retrieve", str(run), "https://example.com", "--allowed-host", "example.com"]), 0)
+        with tempfile.TemporaryDirectory() as root:
+            run = Path(root) / "run"
+            init_run(run)
+            plan_run(run, "question", [], [], 1)
+            self.assertEqual(main(["retrieve", str(run), "https://example.com", "--crawl4ai", "--crawl4ai-version", "0.0.invalid"]), 2)
+
     def test_canonical_identity_is_stable(self) -> None:
         left = {"b": 2, "a": [1, 2]}
         right = {"a": [1, 2], "b": 2}
         self.assertEqual(canonical_sha256(left), canonical_sha256(right))
+
+    @unittest.skipUnless(bool(__import__("os").environ.get("MONOKL_LIVE_CRAWL")), "set MONOKL_LIVE_CRAWL=1 to run opt-in public crawl")
+    def test_opt_in_live_public_crawl(self) -> None:
+        manifest = StdlibRetriever().retrieve(RetrievalRequest("https://example.com", RetrievalBudgets(allowed_hosts=("example.com",)), {}))
+        self.assertIn(manifest["status"], {"ok", "partial"})
+        self.assertEqual(manifest["preflight"]["host"], "example.com")
 
 
 if __name__ == "__main__":

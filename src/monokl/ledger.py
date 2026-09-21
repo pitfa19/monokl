@@ -43,7 +43,28 @@ TRANSITION_KEYS = {
     "sha256",
 }
 ARTIFACT_REF_KEYS = {"id", "path", "sha256", "contract"}
-ALLOWED_TRANSITIONS = {("absent", "initialized"), ("initialized", "scoped")}
+RETRIEVAL_KEYS = {
+    "schema_version",
+    "contract",
+    "adapter_version",
+    "crawl4ai_version",
+    "requested_url",
+    "final_url",
+    "status",
+    "http_status",
+    "redirects",
+    "budget",
+    "cache_key",
+    "preflight",
+    "postflight",
+    "content_sha256",
+    "normalized_markdown_sha256",
+    "normalized_markdown_bytes",
+    "truncated",
+    "error",
+    "browser_isolation_policy",
+}
+ALLOWED_TRANSITIONS = {("absent", "initialized"), ("initialized", "scoped"), ("scoped", "retrieved")}
 
 
 @dataclass(frozen=True)
@@ -199,6 +220,31 @@ def add_scope(run_dir: Path, scope: Scope) -> dict[str, Any]:
     return {"schema_version": SCHEMA_VERSION, "command": "plan", "state": "scoped", "scope": payload}
 
 
+def add_retrieval(run_dir: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    state = run_dir / STATE_DIR
+    if not state.is_dir() or state.is_symlink():
+        raise ContractError("run is not initialized")
+    with RunLock(state):
+        current = validate_run(run_dir, held_lock=True)
+        if not current.valid:
+            raise ContractError("run is invalid; validate before resuming writes")
+        if current.state != "scoped":
+            raise FileExistsError("retrieval requires a scoped run and is create-only")
+        _validate_retrieval_doc(payload)
+        artifact = _artifact(state, "retrieval", "monokl.retrieval_snapshot", payload)
+        sequence = _next_sequence(state)
+        transition = transition_contract(
+            sequence=sequence,
+            transition_id="retrieve",
+            from_state="scoped",
+            to_state="retrieved",
+            artifacts=[artifact],
+            previous_sha256=_latest_transition_sha256(state),
+        )
+        _write_new(_transition_path(state, sequence, "retrieve"), transition)
+    return {"schema_version": SCHEMA_VERSION, "command": "retrieve", "state": "retrieved", "retrieval": payload}
+
+
 def _validate_run_doc(value: Any) -> None:
     if not isinstance(value, dict):
         raise ContractError("run must be an object")
@@ -217,6 +263,24 @@ def _validate_scope_doc(value: Any) -> None:
         raise ContractError("scope has unsupported schema")
     if value["authority"] != "proposal_only" or value["retrieved_content_is_untrusted"] is not True:
         raise ContractError("scope authority boundary changed")
+
+
+def _validate_retrieval_doc(value: Any) -> None:
+    if not isinstance(value, dict):
+        raise ContractError("retrieval must be an object")
+    require_keys(value, RETRIEVAL_KEYS, RETRIEVAL_KEYS, "retrieval")
+    if value["schema_version"] != SCHEMA_VERSION or value["contract"] != "monokl.retrieval_snapshot":
+        raise ContractError("retrieval has unsupported schema or contract")
+    if value["status"] not in {"ok", "partial", "error"}:
+        raise ContractError("retrieval status must be ok, partial, or error")
+    if value["status"] in {"partial", "error"} and not isinstance(value["error"], dict):
+        raise ContractError("partial/error retrievals must include an explicit error artifact")
+    policy = value["browser_isolation_policy"]
+    if not isinstance(policy, dict):
+        raise ContractError("browser isolation policy must be recorded")
+    forbidden = ["credentials", "persistent_profile", "proxy", "downloads", "arbitrary_javascript", "llm_api"]
+    if any(policy.get(name) is not False for name in forbidden):
+        raise ContractError("browser isolation policy enables a forbidden capability")
 
 
 def _validate_transition_doc(value: Any) -> None:
@@ -317,6 +381,8 @@ def validate_run(run_dir: Path, *, held_lock: bool = False) -> ValidationResult:
                     _validate_run_doc(artifact_json)
                 elif ref["contract"] == "monokl.scope":
                     _validate_scope_doc(artifact_json)
+                elif ref["contract"] == "monokl.retrieval_snapshot":
+                    _validate_retrieval_doc(artifact_json)
                 else:
                     raise ContractError(f"unknown artifact contract: {ref['contract']}")
             expected_state = transition["to_state"]
@@ -349,10 +415,12 @@ def resume_run(run_dir: Path) -> dict[str, Any]:
     if validation.state == "initialized":
         return {"schema_version": SCHEMA_VERSION, "command": "resume", "state": "ready", "next_phase": "plan"}
     if validation.state == "scoped":
+        return {"schema_version": SCHEMA_VERSION, "command": "resume", "state": "ready", "next_phase": "retrieve"}
+    if validation.state == "retrieved":
         return {
             "schema_version": SCHEMA_VERSION,
             "command": "resume",
             "state": "blocked",
-            "reason": "next approved goal not implemented: retrieval",
+            "reason": "next approved goal not implemented: reasoning",
         }
     return {"schema_version": SCHEMA_VERSION, "command": "resume", "state": "blocked", "reason": "unknown_state"}
