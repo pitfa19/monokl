@@ -1,1 +1,47 @@
-{"schema_version":1,"product":"monokl","payloads":["skills/monokl/SKILL.md","project-skills/monokl-stage-template.md","maps/parity-map.json"],"owned_roots":["~/.jcode/skills/monokl","<project>/.jcode/skills/monokl-stage-reference"]}
+{
+  "schema_version": 1,
+  "product": "monokl",
+  "payloads": [
+    "skills/monokl/SKILL.md",
+    "maps/parity-map.json",
+    "project-skills/monokl-1-5-chapter-partition.md",
+    "project-skills/monokl-1-decompose.md",
+    "project-skills/monokl-10-triple-draft.md",
+    "project-skills/monokl-11-synthesize.md",
+    "project-skills/monokl-12-critics.md",
+    "project-skills/monokl-13-gap-fetch.md",
+    "project-skills/monokl-14-5-cite-check.md",
+    "project-skills/monokl-14-patcher.md",
+    "project-skills/monokl-15-polish.md",
+    "project-skills/monokl-16-readability-audit.md",
+    "project-skills/monokl-2-width-sweep.md",
+    "project-skills/monokl-3-contradiction-graph.md",
+    "project-skills/monokl-4-loci-analysis.md",
+    "project-skills/monokl-5-depth-investigation.md",
+    "project-skills/monokl-6-cross-locus-reconcile.md",
+    "project-skills/monokl-7-source-tensions.md",
+    "project-skills/monokl-8-corpus-critic.md",
+    "project-skills/monokl-9-evidence-digest.md"
+  ],
+  "owned_roots": [
+    "~/.jcode/skills/monokl",
+    "<project>/.jcode/skills/monokl-1-5-chapter-partition",
+    "<project>/.jcode/skills/monokl-1-decompose",
+    "<project>/.jcode/skills/monokl-10-triple-draft",
+    "<project>/.jcode/skills/monokl-11-synthesize",
+    "<project>/.jcode/skills/monokl-12-critics",
+    "<project>/.jcode/skills/monokl-13-gap-fetch",
+    "<project>/.jcode/skills/monokl-14-5-cite-check",
+    "<project>/.jcode/skills/monokl-14-patcher",
+    "<project>/.jcode/skills/monokl-15-polish",
+    "<project>/.jcode/skills/monokl-16-readability-audit",
+    "<project>/.jcode/skills/monokl-2-width-sweep",
+    "<project>/.jcode/skills/monokl-3-contradiction-graph",
+    "<project>/.jcode/skills/monokl-4-loci-analysis",
+    "<project>/.jcode/skills/monokl-5-depth-investigation",
+    "<project>/.jcode/skills/monokl-6-cross-locus-reconcile",
+    "<project>/.jcode/skills/monokl-7-source-tensions",
+    "<project>/.jcode/skills/monokl-8-corpus-critic",
+    "<project>/.jcode/skills/monokl-9-evidence-digest"
+  ]
+}

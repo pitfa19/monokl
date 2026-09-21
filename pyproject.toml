@@ -4,12 +4,12 @@ build-backend = "hatchling.build"
 
 [project]
 name = "monokl"
-version = "0.11.1"
+version = "0.2.0"
 description = "Jcode-native research extension derived from HyperResearch with disciplined provenance, critique gates, citation auditing, and resumability."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11,<3.14"
-authors = [{name = "Jordan Gibbs", email = "jordan@jordangibbs.xyz"}]
+authors = [{name = "pitfa19"}]
 keywords = ["research", "knowledge-base", "wiki", "llm", "markdown", "cli", "agent", "zettelkasten"]
 classifiers = [
     "Development Status :: 3 - Alpha",
@@ -65,9 +65,9 @@ hyperresearch = "hyperresearch.cli:app"
 hpr = "hyperresearch.cli:app"
 
 [project.urls]
-Homepage = "https://github.com/1jehuang/jcode"
-Repository = "https://github.com/1jehuang/jcode"
-Issues = "https://github.com/1jehuang/jcode/issues"
+Homepage = "https://github.com/pitfa19/monokl"
+Repository = "https://github.com/pitfa19/monokl"
+Issues = "https://github.com/pitfa19/monokl/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/hyperresearch"]

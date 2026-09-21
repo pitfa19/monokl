@@ -22,8 +22,8 @@ def test_jcode_payload_resources_and_parity_map_complete():
     assert "Claude `Task` becomes Jcode `swarm`" in skill
     assert "blocked_capability" in skill
     assert parity["compatibility_commands"] == ["monokl", "hpr", "hyperresearch"]
-    assert len(parity["stages"]) == 16
-    assert {stage["stage"] for stage in parity["stages"]} == set(range(1, 17))
+    assert len(parity["stages"]) == 18
+    assert {stage["stage"] for stage in parity["stages"]} == {1, 1.5, *range(2, 15), 14.5, 15, 16}
     assert all(stage["upstream_skill"].startswith("hyperresearch-") for stage in parity["stages"])
     assert parity["model_routes"]["config_key"] == "MONOKL_MODEL_ROUTES_JSON"
 
@@ -35,9 +35,11 @@ def test_jcode_install_idempotent_and_uninstall_guarded(tmp_path):
 
     receipt = install_jcode_payload(home=home, project=project)
     skill_path = home / ".jcode" / "skills" / "monokl" / "SKILL.md"
-    project_skill = project / ".jcode" / "skills" / "monokl-stage-reference" / "SKILL.md"
+    project_skill = project / ".jcode" / "skills" / "monokl-1-5-chapter-partition" / "SKILL.md"
     assert skill_path.exists()
     assert project_skill.exists()
+    assert (project / ".jcode" / "skills" / "monokl-14-5-cite-check" / "SKILL.md").exists()
+    assert len(list((project / ".jcode" / "skills").glob("monokl-*/SKILL.md"))) == 18
     assert (home / ".jcode" / "skills" / "monokl" / ".monokl-install-receipt.json").exists()
 
     receipt2 = install_jcode_payload(home=home, project=project)
