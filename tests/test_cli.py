@@ -8,8 +8,8 @@ from unittest import mock
 from urllib.error import HTTPError, URLError
 
 from monokl.cli import init_run, main, plan_run, retrieve_run, status
-from monokl.contracts import canonical_sha256, sha256_hex
-from monokl.ledger import RunLock, create_reasoning_task, resume_run, submit_reasoning_result, validate_run
+from monokl.contracts import canonical_sha256, group_approval_contract, sha256_hex, source_groups_contract, source_inventory_contract
+from monokl.ledger import RunLock, approve_source_groups, create_reasoning_task, create_source_groups, create_source_inventory, resume_run, submit_reasoning_result, validate_run
 from monokl.retrieval import Crawl4AIRetriever, RetrievalBudgets, RetrievalRequest, StdlibRetriever, browser_isolation_policy, check_public_url
 
 
@@ -347,7 +347,7 @@ class MonoklCliTests(unittest.TestCase):
             self.assertEqual(task["source_artifacts"][0]["path"], "artifacts/retrieval.json")
             result = submit_reasoning_result(run, self._valid_reasoning_result(task))
             self.assertEqual(result["state"], "reasoned")
-            self.assertEqual(resume_run(run)["reason"], "next approved goal not implemented: grouping")
+            self.assertEqual(resume_run(run)["next_phase"], "source-inventory")
             self.assertTrue(validate_run(run).valid)
 
     def test_reasoning_result_wrong_hash_unknown_fields_and_malformed_output_fail(self) -> None:
@@ -443,6 +443,107 @@ class MonoklCliTests(unittest.TestCase):
             result_path.write_text(json.dumps(self._valid_reasoning_result(task)), encoding="utf-8")
             self.assertEqual(main(["reasoning-result", str(run), str(result_path)]), 0)
             self.assertTrue(validate_run(run).valid)
+
+    def _reasoned_run(self, root: str) -> Path:
+        run = self._retrieved_run(root)
+        task = create_reasoning_task(run)["task"]
+        submit_reasoning_result(run, self._valid_reasoning_result(task))
+        return run
+
+    def _inventory_payload(self, run: Path, *, duplicate: bool = False) -> dict:
+        retrieval = run / ".monokl" / "artifacts" / "retrieval.json"
+        ref = {"artifact_id": "retrieval", "artifact_path": "artifacts/retrieval.json", "artifact_contract": "monokl.retrieval_snapshot", "artifact_sha256": sha256_hex(retrieval.read_bytes())}
+        sources = [{"source_id": "source-1", **ref, "status": "retained", "rationale": "canonical retained source"}]
+        duplicates = []
+        if duplicate:
+            sources.append({"source_id": "source-2", **ref, "status": "duplicate", "rationale": "same canonical URL and content hash"})
+            duplicates.append({"source_id": "source-2", "duplicate_of": "source-1", "rationale": "deterministic duplicate of retained source-1"})
+        return source_inventory_contract(sources=sources, duplicates=duplicates)
+
+    def _groups_payload(self, inventory: dict, *, source_ids=None, excluded=None, allow_overlap=False) -> dict:
+        source_ids = source_ids if source_ids is not None else ["source-1"]
+        excluded = excluded if excluded is not None else []
+        return source_groups_contract(
+            inventory_sha256=inventory["inventory_sha256"],
+            groups=[{"group_id": "group-1", "title": "Group 1", "source_ids": source_ids, "rationale": "review grouping"}],
+            excluded_source_ids=excluded,
+            allow_overlap=allow_overlap,
+        )
+
+    def test_inventory_grouping_approval_public_cli_workflow(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            run = self._reasoned_run(root)
+            self.assertEqual(resume_run(run)["next_phase"], "source-inventory")
+            self.assertEqual(main(["source-inventory", str(run)]), 0)
+            inventory = json.loads((run / ".monokl" / "artifacts" / "source-inventory.json").read_text())
+            groups = self._groups_payload(inventory)
+            groups_path = Path(root) / "groups.json"
+            groups_path.write_text(json.dumps(groups), encoding="utf-8")
+            self.assertEqual(main(["source-groups", str(run), str(groups_path)]), 0)
+            self.assertEqual(resume_run(run)["next_phase"], "source-group-approval")
+            approval = group_approval_contract(owner="pitfa", inventory_sha256=inventory["inventory_sha256"], groups_sha256=groups["groups_sha256"], decision=True, rationale="owner approves exact inventory and groups hashes")
+            approval_path = Path(root) / "approval.json"
+            approval_path.write_text(json.dumps(approval), encoding="utf-8")
+            self.assertEqual(main(["source-group-approval", str(run), str(approval_path)]), 0)
+            self.assertEqual(validate_run(run).state, "groups-approved")
+            self.assertEqual(resume_run(run)["reason"], "next approved goal not implemented: evidence-synthesis")
+
+    def test_inventory_duplicates_omissions_unknown_overlap_and_approval_pins_fail(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            run = self._reasoned_run(root)
+            missing_rationale = self._inventory_payload(run, duplicate=True)
+            missing_rationale["duplicates"] = []
+            missing_rationale["inventory_sha256"] = canonical_sha256({k: v for k, v in missing_rationale.items() if k != "inventory_sha256"})
+            with self.assertRaises(ValueError):
+                create_source_inventory(run, missing_rationale)
+            inventory = create_source_inventory(run, self._inventory_payload(run, duplicate=True))["inventory"]
+            with self.assertRaises(ValueError):
+                create_source_groups(run, self._groups_payload(inventory, source_ids=["source-unknown"]))
+            with self.assertRaises(ValueError):
+                create_source_groups(run, self._groups_payload(inventory, source_ids=[]))
+            overlapping = source_groups_contract(
+                inventory_sha256=inventory["inventory_sha256"],
+                groups=[
+                    {"group_id": "group-1", "title": "A", "source_ids": ["source-1"], "rationale": "first"},
+                    {"group_id": "group-2", "title": "B", "source_ids": ["source-1"], "rationale": "second"},
+                ],
+                excluded_source_ids=[],
+                allow_overlap=False,
+            )
+            with self.assertRaises(ValueError):
+                create_source_groups(run, overlapping)
+            groups = create_source_groups(run, self._groups_payload(inventory))["groups"]
+            wrong = group_approval_contract(owner="pitfa", inventory_sha256="0" * 64, groups_sha256=groups["groups_sha256"], decision=True, rationale="wrong inventory pin")
+            with self.assertRaises(ValueError):
+                approve_source_groups(run, wrong)
+            implicit = group_approval_contract(owner="pitfa", inventory_sha256=inventory["inventory_sha256"], groups_sha256=groups["groups_sha256"], decision=False, rationale="not approved")
+            with self.assertRaises(ValueError):
+                approve_source_groups(run, implicit)
+            wrong_groups = group_approval_contract(owner="pitfa", inventory_sha256=inventory["inventory_sha256"], groups_sha256="0" * 64, decision=True, rationale="wrong groups pin")
+            with self.assertRaises(ValueError):
+                approve_source_groups(run, wrong_groups)
+
+    def test_inventory_hash_drift_overwrite_and_partial_files_fail_closed(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            run = self._reasoned_run(root)
+            inventory = create_source_inventory(run)["inventory"]
+            with self.assertRaises(FileExistsError):
+                create_source_inventory(run)
+            path = run / ".monokl" / "artifacts" / "source-inventory.json"
+            tampered = json.loads(path.read_text())
+            tampered["sources"][0]["rationale"] = "changed"
+            path.write_text(json.dumps(tampered, sort_keys=True) + "\n", encoding="utf-8")
+            validation = validate_run(run)
+            self.assertFalse(validation.valid)
+            self.assertIn("hash drift", validation.errors[0].message)
+        with tempfile.TemporaryDirectory() as root:
+            run = self._reasoned_run(root)
+            create_source_inventory(run)
+            partial = run / ".monokl" / "artifacts" / "source-groups.json"
+            partial.write_text('{"schema_version":', encoding="utf-8")
+            validation = validate_run(run)
+            self.assertFalse(validation.valid)
+            self.assertIn("orphan_artifact", {error.code for error in validation.errors})
 
     def test_crawl4ai_fake_boundary_records_limits_and_identity(self) -> None:
         body = "# ok"

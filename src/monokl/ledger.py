@@ -22,6 +22,7 @@ from .contracts import (
     sha256_hex,
     transition_contract,
     reasoning_task_contract,
+    source_inventory_contract,
 )
 
 STATE_DIR = ".monokl"
@@ -46,6 +47,13 @@ TRANSITION_KEYS = {
 ARTIFACT_REF_KEYS = {"id", "path", "sha256", "contract"}
 REASONING_TASK_KEYS = {"schema_version", "contract", "protocol", "task_id", "task_sha256", "task_type", "instructions", "source_artifacts", "allowed_result_fields", "authority"}
 REASONING_RESULT_KEYS = {"schema_version", "contract", "protocol", "task_id", "task_sha256", "observations", "inferences", "uncertainties", "provider_metadata", "authority"}
+INVENTORY_KEYS = {"schema_version", "contract", "protocol", "sources", "duplicates", "exclusions", "deduplication_policy", "authority", "inventory_sha256"}
+SOURCE_KEYS = {"source_id", "artifact_id", "artifact_path", "artifact_contract", "artifact_sha256", "status", "rationale"}
+DUPLICATE_KEYS = {"source_id", "duplicate_of", "rationale"}
+EXCLUSION_KEYS = {"source_id", "rationale"}
+GROUPS_KEYS = {"schema_version", "contract", "protocol", "inventory_sha256", "groups", "excluded_source_ids", "policy", "author_boundary", "authority", "groups_sha256"}
+GROUP_KEYS = {"group_id", "title", "source_ids", "rationale"}
+APPROVAL_KEYS = {"schema_version", "contract", "protocol", "owner", "decision", "inventory_sha256", "groups_sha256", "rationale", "authority", "approval_sha256"}
 REASONING_ITEM_KEYS = {"id", "text", "source_locators"}
 SOURCE_LOCATOR_KEYS = {"artifact_id", "artifact_path", "artifact_contract", "artifact_sha256", "locator"}
 
@@ -73,7 +81,7 @@ RETRIEVAL_KEYS = {
     "browser_isolation_policy",
     "observed_limits",
 }
-ALLOWED_TRANSITIONS = {("absent", "initialized"), ("initialized", "scoped"), ("scoped", "retrieved"), ("retrieved", "tasked"), ("tasked", "reasoned")}
+ALLOWED_TRANSITIONS = {("absent", "initialized"), ("initialized", "scoped"), ("scoped", "retrieved"), ("retrieved", "tasked"), ("tasked", "reasoned"), ("reasoned", "inventoried"), ("inventoried", "grouped"), ("grouped", "groups-approved")}
 
 
 @dataclass(frozen=True)
@@ -294,6 +302,69 @@ def submit_reasoning_result(run_dir: Path, payload: dict[str, Any]) -> dict[str,
         _write_new(_transition_path(state, sequence, "reasoning-result"), transition)
     return {"schema_version": SCHEMA_VERSION, "command": "reasoning-result", "state": "reasoned", "result": payload}
 
+
+def create_source_inventory(run_dir: Path, payload: dict[str, Any] | None = None) -> dict[str, Any]:
+    state = run_dir / STATE_DIR
+    if not state.is_dir() or state.is_symlink():
+        raise ContractError("run is not initialized")
+    with RunLock(state):
+        current = validate_run(run_dir, held_lock=True)
+        if not current.valid:
+            raise ContractError("run is invalid; validate before resuming writes")
+        if current.state != "reasoned":
+            raise FileExistsError("source inventory requires reasoned state and is create-only")
+        if payload is None:
+            retrieval = _expected_retrieval_ref(state)
+            payload = source_inventory_contract(
+                sources=[{"source_id": "source-1", "artifact_id": retrieval["id"], "artifact_path": retrieval["path"], "artifact_contract": retrieval["contract"], "artifact_sha256": retrieval["sha256"], "status": "retained", "rationale": "only pinned retrieval source"}],
+                duplicates=[],
+            )
+        _validate_inventory_doc(payload, state)
+        artifact = _artifact(state, "source-inventory", "monokl.source_inventory", payload)
+        sequence = _next_sequence(state)
+        transition = transition_contract(sequence=sequence, transition_id="source-inventory", from_state="reasoned", to_state="inventoried", artifacts=[artifact], previous_sha256=_latest_transition_sha256(state))
+        _write_new(_transition_path(state, sequence, "source-inventory"), transition)
+    return {"schema_version": SCHEMA_VERSION, "command": "source-inventory", "state": "inventoried", "inventory": payload}
+
+
+def create_source_groups(run_dir: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    state = run_dir / STATE_DIR
+    if not state.is_dir() or state.is_symlink():
+        raise ContractError("run is not initialized")
+    with RunLock(state):
+        current = validate_run(run_dir, held_lock=True)
+        if not current.valid:
+            raise ContractError("run is invalid; validate before resuming writes")
+        if current.state != "inventoried":
+            raise FileExistsError("source groups require inventoried state and are create-only")
+        inventory = _read_json(state / ARTIFACT_DIR / "source-inventory.json")
+        _validate_groups_doc(payload, inventory)
+        artifact = _artifact(state, "source-groups", "monokl.source_groups", payload)
+        sequence = _next_sequence(state)
+        transition = transition_contract(sequence=sequence, transition_id="source-groups", from_state="inventoried", to_state="grouped", artifacts=[artifact], previous_sha256=_latest_transition_sha256(state))
+        _write_new(_transition_path(state, sequence, "source-groups"), transition)
+    return {"schema_version": SCHEMA_VERSION, "command": "source-groups", "state": "grouped", "groups": payload}
+
+
+def approve_source_groups(run_dir: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    state = run_dir / STATE_DIR
+    if not state.is_dir() or state.is_symlink():
+        raise ContractError("run is not initialized")
+    with RunLock(state):
+        current = validate_run(run_dir, held_lock=True)
+        if not current.valid:
+            raise ContractError("run is invalid; validate before resuming writes")
+        if current.state != "grouped":
+            raise FileExistsError("source group approval requires grouped state and is create-only")
+        inventory = _read_json(state / ARTIFACT_DIR / "source-inventory.json")
+        groups = _read_json(state / ARTIFACT_DIR / "source-groups.json")
+        _validate_approval_doc(payload, inventory, groups)
+        artifact = _artifact(state, "source-group-approval", "monokl.source_group_approval", payload)
+        sequence = _next_sequence(state)
+        transition = transition_contract(sequence=sequence, transition_id="source-group-approval", from_state="grouped", to_state="groups-approved", artifacts=[artifact], previous_sha256=_latest_transition_sha256(state))
+        _write_new(_transition_path(state, sequence, "source-group-approval"), transition)
+    return {"schema_version": SCHEMA_VERSION, "command": "source-group-approval", "state": "groups-approved", "approval": payload}
+
 def _validate_run_doc(value: Any) -> None:
     if not isinstance(value, dict):
         raise ContractError("run must be an object")
@@ -436,6 +507,144 @@ def _validate_reasoning_result_doc(value: Any, task: dict[str, Any] | None = Non
         if value["task_id"] != task["task_id"] or value["task_sha256"] != task["task_sha256"]:
             raise ContractError("reasoning result does not pin the task identity and hash")
 
+
+def _validate_inventory_doc(value: Any, state: Path | None = None) -> None:
+    if not isinstance(value, dict):
+        raise ContractError("source inventory must be an object")
+    require_keys(value, INVENTORY_KEYS, INVENTORY_KEYS, "source inventory")
+    if value["schema_version"] != SCHEMA_VERSION or value["contract"] != "monokl.source_inventory" or value["protocol"] != "monokl.source_inventory.v2":
+        raise ContractError("source inventory has unsupported schema, contract, or protocol")
+    if value["authority"] != "proposal_only":
+        raise ContractError("source inventory authority boundary changed")
+    unsigned = {key: item for key, item in value.items() if key != "inventory_sha256"}
+    if value["inventory_sha256"] != canonical_sha256(unsigned):
+        raise ContractError("source inventory hash drift")
+    sources = value["sources"]
+    duplicates = value["duplicates"]
+    exclusions = value["exclusions"]
+    if not isinstance(sources, list) or not sources:
+        raise ContractError("source inventory must include at least one source")
+    if [source.get("source_id") for source in sources if isinstance(source, dict)] != sorted(source.get("source_id") for source in sources if isinstance(source, dict)):
+        raise ContractError("source inventory sources must be sorted by source_id for deterministic deduplication")
+    seen: set[str] = set()
+    retained: set[str] = set()
+    duplicate_ids: set[str] = set()
+    for source in sources:
+        if not isinstance(source, dict):
+            raise ContractError("source inventory source must be an object")
+        require_keys(source, SOURCE_KEYS, SOURCE_KEYS, "source inventory source")
+        sid = source["source_id"]
+        if not isinstance(sid, str) or re.fullmatch(r"[a-z0-9][a-z0-9-]*", sid) is None:
+            raise ContractError("source inventory source_id must be path-safe")
+        if sid in seen:
+            raise ContractError("source inventory contains duplicate source_id")
+        seen.add(sid)
+        if source["status"] not in {"retained", "duplicate", "excluded"}:
+            raise ContractError("source inventory source status must be retained, duplicate, or excluded")
+        if not isinstance(source["rationale"], str) or not source["rationale"].strip():
+            raise ContractError("source inventory sources require rationale")
+        if source["status"] == "retained":
+            retained.add(sid)
+        if source["status"] == "duplicate":
+            duplicate_ids.add(sid)
+        if state is not None:
+            path = _safe_child(state, source["artifact_path"])
+            if not path.is_file() or path.is_symlink() or sha256_hex(path.read_bytes()) != source["artifact_sha256"]:
+                raise ContractError("source inventory source does not match pinned artifact bytes")
+    if not isinstance(duplicates, list):
+        raise ContractError("source inventory duplicates must be a list")
+    explained_duplicates: set[str] = set()
+    for duplicate in duplicates:
+        if not isinstance(duplicate, dict):
+            raise ContractError("source inventory duplicate must be an object")
+        require_keys(duplicate, DUPLICATE_KEYS, DUPLICATE_KEYS, "source inventory duplicate")
+        if duplicate["source_id"] not in duplicate_ids:
+            raise ContractError("source inventory duplicate rationale references unknown duplicate source_id")
+        if duplicate["duplicate_of"] not in retained:
+            raise ContractError("source inventory duplicate must name a retained source")
+        if not isinstance(duplicate["rationale"], str) or not duplicate["rationale"].strip():
+            raise ContractError("source inventory duplicates require rationale")
+        explained_duplicates.add(duplicate["source_id"])
+    if explained_duplicates != duplicate_ids:
+        raise ContractError("source inventory must explain every duplicate source")
+    if not isinstance(exclusions, list):
+        raise ContractError("source inventory exclusions must be a list")
+    for exclusion in exclusions:
+        if not isinstance(exclusion, dict):
+            raise ContractError("source inventory exclusion must be an object")
+        require_keys(exclusion, EXCLUSION_KEYS, EXCLUSION_KEYS, "source inventory exclusion")
+        if exclusion["source_id"] not in seen:
+            raise ContractError("source inventory exclusion references unknown source_id")
+
+
+def _validate_groups_doc(value: Any, inventory: dict[str, Any] | None = None) -> None:
+    if not isinstance(value, dict):
+        raise ContractError("source groups must be an object")
+    require_keys(value, GROUPS_KEYS, GROUPS_KEYS, "source groups")
+    if value["schema_version"] != SCHEMA_VERSION or value["contract"] != "monokl.source_groups" or value["protocol"] != "monokl.source_groups.v2":
+        raise ContractError("source groups have unsupported schema, contract, or protocol")
+    if value["authority"] != "proposal_only":
+        raise ContractError("source groups authority boundary changed")
+    unsigned = {key: item for key, item in value.items() if key != "groups_sha256"}
+    if value["groups_sha256"] != canonical_sha256(unsigned):
+        raise ContractError("source groups hash drift")
+    if inventory is not None:
+        _validate_inventory_doc(inventory)
+        if value["inventory_sha256"] != inventory["inventory_sha256"]:
+            raise ContractError("source groups inventory hash does not match inventory artifact")
+        retained = {s["source_id"] for s in inventory["sources"] if s["status"] == "retained"}
+    else:
+        retained = set()
+    policy = value["policy"]
+    if not isinstance(policy, dict) or policy.get("every_retained_source_assigned_or_explicitly_excluded") is not True:
+        raise ContractError("source groups must require complete retained source coverage")
+    allow_overlap = policy.get("allow_overlap") is True
+    assigned: list[str] = []
+    if not isinstance(value["groups"], list):
+        raise ContractError("source groups groups must be a list")
+    for group in value["groups"]:
+        if not isinstance(group, dict):
+            raise ContractError("source group must be an object")
+        require_keys(group, GROUP_KEYS, GROUP_KEYS, "source group")
+        if not isinstance(group["source_ids"], list) or not group["source_ids"]:
+            raise ContractError("source group must include source_ids")
+        for sid in group["source_ids"]:
+            if inventory is not None and sid not in retained:
+                raise ContractError("source groups reference unknown source_id")
+            assigned.append(sid)
+    excluded = value["excluded_source_ids"]
+    if not isinstance(excluded, list):
+        raise ContractError("source groups excluded_source_ids must be a list")
+    excluded_ids: set[str] = set()
+    for item in excluded:
+        if not isinstance(item, dict):
+            raise ContractError("source group exclusion must be an object")
+        require_keys(item, EXCLUSION_KEYS, EXCLUSION_KEYS, "source group exclusion")
+        excluded_ids.add(item["source_id"])
+    if not allow_overlap and len(assigned) != len(set(assigned)):
+        raise ContractError("source groups overlap but policy disallows overlap")
+    if inventory is not None and set(assigned) | excluded_ids != retained:
+        raise ContractError("source groups must assign or explicitly exclude every retained source")
+
+
+def _validate_approval_doc(value: Any, inventory: dict[str, Any] | None = None, groups: dict[str, Any] | None = None) -> None:
+    if not isinstance(value, dict):
+        raise ContractError("source group approval must be an object")
+    require_keys(value, APPROVAL_KEYS, APPROVAL_KEYS, "source group approval")
+    unsigned = {key: item for key, item in value.items() if key != "approval_sha256"}
+    if value["approval_sha256"] != canonical_sha256(unsigned):
+        raise ContractError("source group approval hash drift")
+    if value["schema_version"] != SCHEMA_VERSION or value["contract"] != "monokl.source_group_approval" or value["protocol"] != "monokl.source_group_approval.v2":
+        raise ContractError("source group approval has unsupported schema, contract, or protocol")
+    if value["decision"] is not True:
+        raise ContractError("source group approval must have explicit decision true; no implicit approval")
+    if value["authority"] != "owner_approval_only":
+        raise ContractError("source group approval authority boundary changed")
+    if inventory is not None and value["inventory_sha256"] != inventory["inventory_sha256"]:
+        raise ContractError("source group approval pins wrong inventory hash")
+    if groups is not None and value["groups_sha256"] != groups["groups_sha256"]:
+        raise ContractError("source group approval pins wrong groups hash")
+
 def _validate_transition_doc(value: Any) -> None:
     if not isinstance(value, dict):
         raise ContractError("transition must be an object")
@@ -549,6 +758,18 @@ def validate_run(run_dir: Path, *, held_lock: bool = False) -> ValidationResult:
                     task_path = state / ARTIFACT_DIR / "reasoning-task.json"
                     task = _read_json(task_path) if task_path.exists() and not task_path.is_symlink() else None
                     _validate_reasoning_result_doc(artifact_json, task)
+                elif ref["contract"] == "monokl.source_inventory":
+                    _validate_inventory_doc(artifact_json, state)
+                elif ref["contract"] == "monokl.source_groups":
+                    inventory_path = state / ARTIFACT_DIR / "source-inventory.json"
+                    inventory = _read_json(inventory_path) if inventory_path.exists() and not inventory_path.is_symlink() else None
+                    _validate_groups_doc(artifact_json, inventory)
+                elif ref["contract"] == "monokl.source_group_approval":
+                    inventory_path = state / ARTIFACT_DIR / "source-inventory.json"
+                    groups_path = state / ARTIFACT_DIR / "source-groups.json"
+                    inventory = _read_json(inventory_path) if inventory_path.exists() and not inventory_path.is_symlink() else None
+                    groups = _read_json(groups_path) if groups_path.exists() and not groups_path.is_symlink() else None
+                    _validate_approval_doc(artifact_json, inventory, groups)
                 else:
                     raise ContractError(f"unknown artifact contract: {ref['contract']}")
             expected_state = transition["to_state"]
@@ -587,5 +808,11 @@ def resume_run(run_dir: Path) -> dict[str, Any]:
     if validation.state == "tasked":
         return {"schema_version": SCHEMA_VERSION, "command": "resume", "state": "ready", "next_phase": "reasoning-result"}
     if validation.state == "reasoned":
-        return {"schema_version": SCHEMA_VERSION, "command": "resume", "state": "blocked", "reason": "next approved goal not implemented: grouping"}
+        return {"schema_version": SCHEMA_VERSION, "command": "resume", "state": "ready", "next_phase": "source-inventory"}
+    if validation.state == "inventoried":
+        return {"schema_version": SCHEMA_VERSION, "command": "resume", "state": "ready", "next_phase": "source-groups"}
+    if validation.state == "grouped":
+        return {"schema_version": SCHEMA_VERSION, "command": "resume", "state": "ready", "next_phase": "source-group-approval"}
+    if validation.state == "groups-approved":
+        return {"schema_version": SCHEMA_VERSION, "command": "resume", "state": "blocked", "reason": "next approved goal not implemented: evidence-synthesis"}
     return {"schema_version": SCHEMA_VERSION, "command": "resume", "state": "blocked", "reason": "unknown_state"}
