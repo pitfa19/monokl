@@ -1,0 +1,80 @@
+{
+  "contract_version": 1,
+  "id": "inputs-monokl-v1",
+  "accepted_at": "2026-09-21T05:01:39Z",
+  "inputs": [
+    {
+      "id": "input-agent-agnostic",
+      "text": "Monokl must be a standalone agent-agnostic tool; optional skills may teach agents to operate it, but no specific model, agent SDK, or coding-agent runtime may be required by the core.",
+      "provenance": {
+        "kind": "human_decision",
+        "decision_id": "decision-monokl-tool-boundary",
+        "actor": "pitfa"
+      }
+    },
+    {
+      "id": "input-bounded-crawl4ai",
+      "text": "Crawl4AI is a bounded retrieval dependency only; Monokl owns provenance, caching identity, budgets, workflow state, evidence, and approvals.",
+      "provenance": {
+        "kind": "human_decision",
+        "decision_id": "decision-monokl-crawl4ai-boundary",
+        "actor": "pitfa"
+      }
+    },
+    {
+      "id": "input-small-hpr-lifecycle",
+      "text": "Monokl should retain the useful HyperResearch lifecycle while remaining materially smaller: scope, retrieve, group, reason, audit, report, receipt, and resume.",
+      "provenance": {
+        "kind": "human_decision",
+        "decision_id": "decision-monokl-product-scope",
+        "actor": "pitfa"
+      }
+    },
+    {
+      "id": "input-approval-boundary",
+      "text": "Retrieved content is untrusted, outputs remain proposal-only, and owner approval is required before promotion or action.",
+      "provenance": {
+        "kind": "human_decision",
+        "decision_id": "decision-monokl-approval-boundary",
+        "actor": "pitfa"
+      }
+    },
+    {
+      "id": "input-current-scaffold",
+      "text": "The current repository implements only create-only init, plan, and status commands plus scope and budget contracts; retrieval and reasoning workflows are not implemented.",
+      "provenance": {
+        "kind": "codebase_observation",
+        "observation_id": "observation-monokl-scaffold",
+        "repository_revision": "2ef3a1102dd18074f9d9d414e0e41feba9a2a720",
+        "paths": [
+          "src/monokl/cli.py",
+          "src/monokl/contracts.py",
+          "tests/test_cli.py"
+        ]
+      }
+    },
+    {
+      "id": "input-security-contract",
+      "text": "The documented first-release security contract refuses private and unsafe URL schemes, disables retrieval-layer LLM extraction, uses create-only artifacts, and excludes credentials, persistent browser profiles, proxies, and downloads.",
+      "provenance": {
+        "kind": "codebase_observation",
+        "observation_id": "observation-monokl-security",
+        "repository_revision": "2ef3a1102dd18074f9d9d414e0e41feba9a2a720",
+        "paths": [
+          "docs/security.md",
+          "docs/architecture.md",
+          "README.md"
+        ]
+      }
+    },
+    {
+      "id": "input-private-development",
+      "text": "The Monokl repository remains private during initial development.",
+      "provenance": {
+        "kind": "human_decision",
+        "decision_id": "decision-monokl-private-development",
+        "actor": "pitfa"
+      }
+    }
+  ]
+}

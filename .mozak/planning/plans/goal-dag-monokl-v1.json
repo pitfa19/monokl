@@ -1,0 +1,192 @@
+{
+  "contract_version": 1,
+  "id": "plan-monokl-development",
+  "version": 1,
+  "input_set_id": "inputs-monokl-v1",
+  "goals": [
+    {
+      "id": "goal-ledger",
+      "version": 1,
+      "title": "Build the durable run ledger and validation foundation",
+      "status": "ready",
+      "priority": 1,
+      "input_ids": [
+        "input-agent-agnostic",
+        "input-small-hpr-lifecycle",
+        "input-approval-boundary",
+        "input-current-scaffold",
+        "input-security-contract"
+      ],
+      "recovery_attempts": 0
+    },
+    {
+      "id": "goal-retrieval",
+      "version": 1,
+      "title": "Add the safe deterministic Crawl4AI retrieval adapter",
+      "status": "planned",
+      "priority": 2,
+      "input_ids": [
+        "input-bounded-crawl4ai",
+        "input-approval-boundary",
+        "input-security-contract"
+      ],
+      "recovery_attempts": 0
+    },
+    {
+      "id": "goal-reasoning-protocol",
+      "version": 1,
+      "title": "Implement provider-neutral reasoning task and result protocols",
+      "status": "planned",
+      "priority": 3,
+      "input_ids": [
+        "input-agent-agnostic",
+        "input-small-hpr-lifecycle",
+        "input-approval-boundary",
+        "input-security-contract"
+      ],
+      "recovery_attempts": 0
+    },
+    {
+      "id": "goal-inventory-grouping",
+      "version": 1,
+      "title": "Create complete source inventory, deduplication, and approved groups",
+      "status": "planned",
+      "priority": 4,
+      "input_ids": [
+        "input-small-hpr-lifecycle",
+        "input-approval-boundary"
+      ],
+      "recovery_attempts": 0
+    },
+    {
+      "id": "goal-evidence-synthesis",
+      "version": 1,
+      "title": "Implement evidence extraction, synthesis, gap tracking, and audit",
+      "status": "planned",
+      "priority": 5,
+      "input_ids": [
+        "input-small-hpr-lifecycle",
+        "input-approval-boundary"
+      ],
+      "recovery_attempts": 0
+    },
+    {
+      "id": "goal-export-integration",
+      "version": 1,
+      "title": "Export reports, receipts, resume state, and MOZAK proposals",
+      "status": "planned",
+      "priority": 6,
+      "input_ids": [
+        "input-agent-agnostic",
+        "input-small-hpr-lifecycle",
+        "input-approval-boundary",
+        "input-security-contract"
+      ],
+      "recovery_attempts": 0
+    },
+    {
+      "id": "goal-jepa-rna-pilot",
+      "version": 1,
+      "title": "Run and evaluate the bounded JEPA-RNA pilot",
+      "status": "planned",
+      "priority": 7,
+      "input_ids": [
+        "input-small-hpr-lifecycle",
+        "input-approval-boundary",
+        "input-security-contract",
+        "input-private-development"
+      ],
+      "recovery_attempts": 0
+    },
+    {
+      "id": "goal-hardening-private-beta",
+      "version": 1,
+      "title": "Harden, package, document, and prepare a private beta",
+      "status": "planned",
+      "priority": 8,
+      "input_ids": [
+        "input-security-contract",
+        "input-private-development"
+      ],
+      "recovery_attempts": 0
+    }
+  ],
+  "dependencies": [
+    {
+      "goal_id": "goal-retrieval",
+      "depends_on_goal_id": "goal-ledger",
+      "provenance": {
+        "kind": "declared",
+        "input_ids": ["input-bounded-crawl4ai", "input-current-scaffold"]
+      }
+    },
+    {
+      "goal_id": "goal-reasoning-protocol",
+      "depends_on_goal_id": "goal-ledger",
+      "provenance": {
+        "kind": "declared",
+        "input_ids": ["input-agent-agnostic", "input-security-contract"]
+      }
+    },
+    {
+      "goal_id": "goal-inventory-grouping",
+      "depends_on_goal_id": "goal-retrieval",
+      "provenance": {
+        "kind": "declared",
+        "input_ids": ["input-small-hpr-lifecycle"]
+      }
+    },
+    {
+      "goal_id": "goal-inventory-grouping",
+      "depends_on_goal_id": "goal-reasoning-protocol",
+      "provenance": {
+        "kind": "declared",
+        "input_ids": ["input-agent-agnostic", "input-approval-boundary"]
+      }
+    },
+    {
+      "goal_id": "goal-evidence-synthesis",
+      "depends_on_goal_id": "goal-inventory-grouping",
+      "provenance": {
+        "kind": "declared",
+        "input_ids": ["input-approval-boundary"]
+      }
+    },
+    {
+      "goal_id": "goal-evidence-synthesis",
+      "depends_on_goal_id": "goal-reasoning-protocol",
+      "provenance": {
+        "kind": "declared",
+        "input_ids": ["input-agent-agnostic", "input-small-hpr-lifecycle"]
+      }
+    },
+    {
+      "goal_id": "goal-export-integration",
+      "depends_on_goal_id": "goal-evidence-synthesis",
+      "provenance": {
+        "kind": "declared",
+        "input_ids": ["input-approval-boundary", "input-small-hpr-lifecycle", "input-security-contract"]
+      }
+    },
+    {
+      "goal_id": "goal-jepa-rna-pilot",
+      "depends_on_goal_id": "goal-export-integration",
+      "provenance": {
+        "kind": "declared",
+        "input_ids": ["input-private-development", "input-small-hpr-lifecycle", "input-security-contract"]
+      }
+    },
+    {
+      "goal_id": "goal-hardening-private-beta",
+      "depends_on_goal_id": "goal-jepa-rna-pilot",
+      "provenance": {
+        "kind": "declared",
+        "input_ids": ["input-security-contract", "input-private-development"]
+      }
+    }
+  ],
+  "recovery": {
+    "max_attempts_per_goal": 2,
+    "allowed_failed_transition": "blocked"
+  }
+}
