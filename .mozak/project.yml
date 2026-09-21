@@ -4,7 +4,7 @@ project:
   id: monokl
   name: "Monokl"
 repository:
-  revision: 0000000000000000000000000000000000000000
+  revision: aaa500b0c1f78f0a1c005fcacbd6198f78383106
 owned_paths:
   - .mozak
   - README.md
