@@ -1,0 +1,23 @@
+[build-system]
+requires = ["hatchling>=1.27,<2"]
+build-backend = "hatchling.build"
+
+[project]
+name = "monokl"
+version = "0.1.0"
+description = "Small agent-agnostic research runner with Crawl4AI retrieval"
+readme = "README.md"
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "pitfa" }]
+dependencies = []
+
+[project.optional-dependencies]
+crawl = ["crawl4ai==0.9.3"]
+dev = []
+
+[project.scripts]
+monokl = "monokl.cli:main"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/monokl"]
