@@ -70,7 +70,7 @@ class MonoklCliTests(unittest.TestCase):
             transition_path.write_text(json.dumps(transition, sort_keys=True) + "\n", encoding="utf-8")
             validation = validate_run(run)
             self.assertFalse(validation.valid)
-            self.assertIn("invalid transition order", validation.errors[0].message)
+            self.assertIn("transition integrity hash drift", validation.errors[0].message)
 
     def test_unknown_fields_are_detected(self) -> None:
         with tempfile.TemporaryDirectory() as root:
@@ -106,7 +106,7 @@ class MonoklCliTests(unittest.TestCase):
             transition_path.write_text(json.dumps(transition, sort_keys=True) + "\n", encoding="utf-8")
             validation = validate_run(run)
             self.assertFalse(validation.valid)
-            self.assertIn("unsafe artifact path", validation.errors[0].message)
+            self.assertIn("transition integrity hash drift", validation.errors[0].message)
 
     def test_concurrent_write_refusal(self) -> None:
         with tempfile.TemporaryDirectory() as root:
@@ -115,6 +115,62 @@ class MonoklCliTests(unittest.TestCase):
             with RunLock(run / ".monokl"):
                 with self.assertRaises(FileExistsError):
                     plan_run(run, "question", [], [], 2)
+
+    def test_transition_tampering_is_detected(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            run = Path(root) / "run"
+            init_run(run)
+            transition_path = run / ".monokl" / "transitions" / "000001-init.json"
+            transition = json.loads(transition_path.read_text())
+            transition["artifacts"] = []
+            transition_path.write_text(json.dumps(transition, sort_keys=True) + "\n", encoding="utf-8")
+            validation = validate_run(run)
+            self.assertFalse(validation.valid)
+            self.assertIn("transition integrity hash drift", validation.errors[0].message)
+
+    def test_orphan_artifact_blocks_resume(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            run = Path(root) / "run"
+            init_run(run)
+            orphan = run / ".monokl" / "artifacts" / "scope.json"
+            orphan.write_text("{}\n", encoding="utf-8")
+            validation = validate_run(run)
+            self.assertFalse(validation.valid)
+            self.assertIn("orphan_artifact", {error.code for error in validation.errors})
+            self.assertEqual(resume_run(run)["reason"], "validation_failed")
+
+    def test_stale_lock_blocks_resume_with_recovery_guidance(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            run = Path(root) / "run"
+            init_run(run)
+            lock = run / ".monokl" / ".write-lock"
+            lock.write_text("99999999", encoding="ascii")
+            validation = validate_run(run)
+            self.assertFalse(validation.valid)
+            self.assertIn("stale_lock", {error.code for error in validation.errors})
+            self.assertIn("remove .monokl/.write-lock", validation.errors[0].message)
+
+    def test_boolean_transition_sequence_is_refused(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            run = Path(root) / "run"
+            init_run(run)
+            transition_path = run / ".monokl" / "transitions" / "000001-init.json"
+            transition = json.loads(transition_path.read_text())
+            transition["sequence"] = True
+            transition_path.write_text(json.dumps(transition, sort_keys=True) + "\n", encoding="utf-8")
+            validation = validate_run(run)
+            self.assertFalse(validation.valid)
+            self.assertIn("positive integer", validation.errors[0].message)
+
+    def test_transition_filename_mismatch_is_refused(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            run = Path(root) / "run"
+            init_run(run)
+            transitions = run / ".monokl" / "transitions"
+            (transitions / "000001-init.json").rename(transitions / "000001-renamed.json")
+            validation = validate_run(run)
+            self.assertFalse(validation.valid)
+            self.assertIn("filename does not match", validation.errors[0].message)
 
     def test_cli_validate_and_resume_commands(self) -> None:
         with tempfile.TemporaryDirectory() as root:

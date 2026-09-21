@@ -6,7 +6,7 @@
 
 A small, agent-agnostic research runner with durable evidence and explicit human approval.
 
-> **Status:** early scaffold. `init`, `plan`, and `status` work. Retrieval and reasoning are planned, not implemented.
+> **Status:** ledger foundation. `init`, `plan`, `status`, `validate`, and `resume` work. Retrieval and reasoning are not implemented.
 
 ## Why
 
@@ -29,6 +29,8 @@ python -m venv .venv
 .venv/bin/monokl plan ./research-run "What should we know about RNA JEPA?" \
   --include "primary papers" --exclude "uncited opinion" --max-sources 30
 .venv/bin/monokl status ./research-run
+.venv/bin/monokl validate ./research-run
+.venv/bin/monokl resume ./research-run
 ```
 
 ## Target workflow
@@ -39,7 +41,7 @@ Retrieved content is always untrusted. Runs are create-only. Private networks, c
 
 ## Plan
 
-Development is split into eight MOZAK goals. Only the first is ready: the durable run ledger and validation foundation. Implementation requires separate owner approval.
+Development is split into eight MOZAK goals. The first, the durable run ledger and validation foundation, is implemented. Later goals still require separate approval.
 
 - [Development plan](docs/development-plan.md)
 - [Architecture](docs/architecture.md)
