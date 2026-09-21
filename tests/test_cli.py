@@ -8,8 +8,8 @@ from unittest import mock
 from urllib.error import HTTPError, URLError
 
 from monokl.cli import init_run, main, plan_run, retrieve_run, status
-from monokl.contracts import canonical_sha256, group_approval_contract, sha256_hex, source_groups_contract, source_inventory_contract
-from monokl.ledger import RunLock, approve_source_groups, create_reasoning_task, create_source_groups, create_source_inventory, resume_run, submit_reasoning_result, validate_run
+from monokl.contracts import canonical_sha256, evidence_synthesis_contract, group_approval_contract, sha256_hex, source_groups_contract, source_inventory_contract
+from monokl.ledger import RunLock, approve_source_groups, create_evidence_synthesis, create_reasoning_task, create_source_groups, create_source_inventory, resume_run, submit_reasoning_result, validate_run
 from monokl.retrieval import Crawl4AIRetriever, RetrievalBudgets, RetrievalRequest, StdlibRetriever, browser_isolation_policy, check_public_url
 
 
@@ -486,7 +486,7 @@ class MonoklCliTests(unittest.TestCase):
             approval_path.write_text(json.dumps(approval), encoding="utf-8")
             self.assertEqual(main(["source-group-approval", str(run), str(approval_path)]), 0)
             self.assertEqual(validate_run(run).state, "groups-approved")
-            self.assertEqual(resume_run(run)["reason"], "next approved goal not implemented: evidence-synthesis")
+            self.assertEqual(resume_run(run)["next_phase"], "evidence-synthesis")
 
     def test_inventory_duplicates_omissions_unknown_overlap_and_approval_pins_fail(self) -> None:
         with tempfile.TemporaryDirectory() as root:
@@ -544,6 +544,71 @@ class MonoklCliTests(unittest.TestCase):
             validation = validate_run(run)
             self.assertFalse(validation.valid)
             self.assertIn("orphan_artifact", {error.code for error in validation.errors})
+
+    def _approved_groups_run(self, root: str) -> Path:
+        run = self._reasoned_run(root)
+        inventory = create_source_inventory(run)["inventory"]
+        groups = create_source_groups(run, self._groups_payload(inventory))["groups"]
+        approval = group_approval_contract(owner="pitfa", inventory_sha256=inventory["inventory_sha256"], groups_sha256=groups["groups_sha256"], decision=True, rationale="approve exact group set")
+        approve_source_groups(run, approval)
+        return run
+
+    def _synthesis_payload(self, run: Path) -> dict:
+        state = run / ".monokl"
+        inventory = json.loads((state / "artifacts" / "source-inventory.json").read_text())
+        groups = json.loads((state / "artifacts" / "source-groups.json").read_text())
+        approval = json.loads((state / "artifacts" / "source-group-approval.json").read_text())
+        retrieval_sha = sha256_hex((state / "artifacts" / "retrieval.json").read_bytes())
+        locator = {"source_id": "source-1", "artifact_id": "retrieval", "artifact_path": "artifacts/retrieval.json", "artifact_contract": "monokl.retrieval_snapshot", "artifact_sha256": retrieval_sha, "locator": "normalized_markdown_sha256"}
+        return evidence_synthesis_contract(
+            inventory_sha256=inventory["inventory_sha256"],
+            groups_sha256=groups["groups_sha256"],
+            approval_sha256=approval["approval_sha256"],
+            reasoning_sha256=sha256_hex((state / "artifacts" / "reasoning-result.json").read_bytes()),
+            claims=[{"claim_id": "claim-1", "group_id": "group-1", "source_ids": ["source-1"], "label": "verified_observation", "text": "The source directly records retrieved content.", "locators": [locator]}, {"claim_id": "claim-2", "group_id": "group-1", "source_ids": ["source-1"], "label": "inference", "text": "The source can support a cautious synthesized summary.", "locators": [locator]}],
+            per_group_synthesis=[{"group_id": "group-1", "summary": "Group 1 has one verified observation and one explicitly labeled inference.", "claim_ids": ["claim-1", "claim-2"], "limitations": ["single source"]}],
+            contradictions=[{"group_id": "group-1", "claim_ids": ["claim-1", "claim-2"], "description": "No contradiction in fixture; entry documents contradiction tracking."}],
+            gaps=[{"group_id": "group-1", "description": "No independent corroboration source.", "impact": "medium"}],
+            unsupported_claims=[{"claim_id": "unsupported-1", "group_id": "group-1", "text": "A deliberately unsupported claim is tracked, not synthesized.", "reason": "no resolving locator"}],
+        )
+
+    def test_evidence_synthesis_cli_resume_and_audit_workflow(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            run = self._approved_groups_run(root)
+            self.assertEqual(resume_run(run)["next_phase"], "evidence-synthesis")
+            payload = self._synthesis_payload(run)
+            path = Path(root) / "synthesis.json"
+            path.write_text(json.dumps(payload), encoding="utf-8")
+            self.assertEqual(main(["evidence-synthesis", str(run), str(path)]), 0)
+            self.assertEqual(validate_run(run).state, "synthesized")
+            audit = json.loads((run / ".monokl" / "artifacts" / "evidence-audit.json").read_text())
+            self.assertEqual(audit["status"], "passed")
+            self.assertEqual(resume_run(run)["reason"], "next approved goal not implemented: export-integration")
+
+    def test_evidence_synthesis_adversarial_inputs_fail_closed(self) -> None:
+        cases = {
+            "nonexistent locator": lambda p: p["claims"][0]["locators"][0].update({"artifact_path": "artifacts/missing.json"}),
+            "unknown source": lambda p: p["claims"][0]["locators"][0].update({"source_id": "source-unknown"}),
+            "missing group": lambda p: p["per_group_synthesis"].clear(),
+            "unsupported claims malformed": lambda p: p["unsupported_claims"][0].pop("reason"),
+            "contradictory evidence malformed": lambda p: p["contradictions"][0].update({"claim_ids": ["missing-claim"]}),
+            "wrong pins": lambda p: p["pinned_inputs"].update({"groups_sha256": "0" * 64}),
+        }
+        for name, mutate in cases.items():
+            with self.subTest(name=name), tempfile.TemporaryDirectory() as root:
+                run = self._approved_groups_run(root)
+                payload = self._synthesis_payload(run)
+                mutate(payload)
+                payload["synthesis_sha256"] = canonical_sha256({k: v for k, v in payload.items() if k != "synthesis_sha256"})
+                with self.assertRaises(ValueError):
+                    create_evidence_synthesis(run, payload)
+        with tempfile.TemporaryDirectory() as root:
+            run = self._approved_groups_run(root)
+            create_evidence_synthesis(run, self._synthesis_payload(run))
+            with self.assertRaises(FileExistsError):
+                create_evidence_synthesis(run, self._synthesis_payload(run))
+            (run / ".monokl" / "artifacts" / "evidence-synthesis.json").write_text('{"schema_version":', encoding="utf-8")
+            self.assertFalse(validate_run(run).valid)
 
     def test_crawl4ai_fake_boundary_records_limits_and_identity(self) -> None:
         body = "# ok"
