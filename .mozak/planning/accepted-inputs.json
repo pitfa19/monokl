@@ -75,6 +75,87 @@
         "decision_id": "decision-monokl-private-development",
         "actor": "pitfa"
       }
+    },
+    {
+      "id": "input-jcode-only",
+      "text": "Monokl is exclusively a Jcode extension. Claude Code, Codex, Cursor, and other host integrations are out of scope for this release.",
+      "provenance": {
+        "kind": "human_decision",
+        "decision_id": "decision-monokl-jcode-only",
+        "actor": "pitfa"
+      }
+    },
+    {
+      "id": "input-hpr-derived",
+      "text": "Monokl must derive from HyperResearch upstream commit 75b1ecfb2891184fad2cc1a2ddf9abe476f5b54c and preserve its research engine and 16-stage methodology rather than reimplementing them.",
+      "provenance": {
+        "kind": "human_decision",
+        "decision_id": "decision-monokl-hpr-fork",
+        "actor": "pitfa"
+      }
+    },
+    {
+      "id": "input-thin-jcode-delta",
+      "text": "Changes from HyperResearch should be limited to branding, packaging, Jcode skill installation, Jcode swarm orchestration, model routing, and fixes required for demonstrated Jcode parity.",
+      "provenance": {
+        "kind": "human_decision",
+        "decision_id": "decision-monokl-thin-delta",
+        "actor": "pitfa"
+      }
+    },
+    {
+      "id": "input-preserve-current",
+      "text": "The current Monokl implementation and v0.1.0 release must remain recoverable through immutable Git history, a preservation tag, and an archive branch before main is replaced.",
+      "provenance": {
+        "kind": "human_decision",
+        "decision_id": "decision-monokl-preserve-v01",
+        "actor": "pitfa"
+      }
+    },
+    {
+      "id": "input-methodology-parity",
+      "text": "Jcode Monokl must preserve HyperResearch pipeline semantics, expected vault artifacts, source and citation handling, contradiction analysis, adversarial review, report generation, and resume behavior.",
+      "provenance": {
+        "kind": "human_decision",
+        "decision_id": "decision-monokl-hpr-parity",
+        "actor": "pitfa"
+      }
+    },
+    {
+      "id": "input-license-boundary",
+      "text": "The fork must preserve HyperResearch's MIT copyright and license, state derivation without implying endorsement, and publish a third-party license inventory.",
+      "provenance": {
+        "kind": "human_decision",
+        "decision_id": "decision-monokl-license-boundary",
+        "actor": "pitfa"
+      }
+    },
+    {
+      "id": "input-pdf-decision",
+      "text": "Replace PyMuPDF only if a permissively licensed alternative demonstrates the required HPR PDF capabilities and passes representative parity fixtures without a material quality or reliability regression; otherwise retain PyMuPDF and disclose its AGPL-3.0 or commercial licensing requirement.",
+      "provenance": {
+        "kind": "human_decision",
+        "decision_id": "decision-monokl-pdf-backend",
+        "actor": "pitfa"
+      }
+    },
+    {
+      "id": "input-no-domain-pilot",
+      "text": "The JEPA-RNA pilot and other domain research runs are excluded. Release acceptance uses bounded generic fixtures only.",
+      "provenance": {
+        "kind": "human_decision",
+        "decision_id": "decision-monokl-no-jepa-pilot",
+        "actor": "pitfa"
+      }
+    },
+    {
+      "id": "input-release-target",
+      "text": "The completed fork is released as Monokl v0.2.0, installed locally, and verified from a fresh Jcode session before handoff to the owner.",
+      "provenance": {
+        "kind": "human_decision",
+        "decision_id": "decision-monokl-v020",
+        "actor": "pitfa"
+      }
     }
   ]
 }
