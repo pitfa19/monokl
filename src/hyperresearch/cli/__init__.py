@@ -12,7 +12,7 @@ import sys
 # Set HYPERRESEARCH_SKIP_PYVER_CHECK=1 to silence (CI, tests).
 if sys.version_info >= (3, 14) and not os.environ.get("HYPERRESEARCH_SKIP_PYVER_CHECK"):
     sys.stderr.write(
-        f"[hyperresearch] WARNING: Python {sys.version_info.major}.{sys.version_info.minor} "
+        f"[monokl] WARNING: Python {sys.version_info.major}.{sys.version_info.minor} "
         "is not yet supported. Please use Python 3.11, 3.12, or 3.13. "
         "Tracking upstream fix at https://github.com/unclecode/crawl4ai/issues/1903\n"
     )
@@ -37,13 +37,13 @@ from hyperresearch import __version__
 
 def _version_callback(value: bool) -> None:
     if value:
-        typer.echo(f"hyperresearch v{__version__}")
+        typer.echo(f"monokl v{__version__}")
         raise typer.Exit()
 
 
 app = typer.Typer(
-    name="hyperresearch",
-    help="Agent-driven research knowledge base.",
+    name="monokl",
+    help="Jcode-native agent-driven research knowledge base.",
     no_args_is_help=True,
     rich_markup_mode="rich",
 )
@@ -108,6 +108,7 @@ from hyperresearch.cli.export import app as export_app
 from hyperresearch.cli.git_cmd import app as git_app
 from hyperresearch.cli.graph import app as graph_app
 from hyperresearch.cli.index import app as index_app
+from hyperresearch.cli.jcode_cmd import app as jcode_app
 from hyperresearch.cli.lint import app as lint_app
 from hyperresearch.cli.note import app as note_app
 from hyperresearch.cli.tag import app as tag_app
@@ -117,6 +118,7 @@ from hyperresearch.cli.topic import app as topic_app
 app.add_typer(note_app, name="note", help="Note CRUD operations.")
 app.add_typer(graph_app, name="graph", help="Knowledge graph and link analysis.")
 app.add_typer(index_app, name="index", help="Auto-generated index pages.")
+app.add_typer(jcode_app, name="jcode", help="Install/remove Jcode skill payloads.")
 app.add_typer(lint_app, name="lint", help="Health-check the vault.")
 app.add_typer(export_app, name="export", help="Export notes.")
 app.add_typer(config_app, name="config", help="Configuration.")

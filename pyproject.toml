@@ -3,9 +3,9 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "hyperresearch"
+name = "monokl"
 version = "0.11.1"
-description = "Claude Code harness for disciplined, adversarially-audited deep research with full provenance."
+description = "Jcode-native research extension derived from HyperResearch with disciplined provenance, critique gates, citation auditing, and resumability."
 readme = "README.md"
 license = "MIT"
 requires-python = ">=3.11,<3.14"
@@ -47,7 +47,7 @@ parallel = ["mcp>=1.8,<2"]
 exa = ["exa-py>=2.0.0"]
 tavily = ["tavily-python>=0.3"]
 watch = ["watchdog>=4.0"]
-all = ["hyperresearch[crawl4ai,mcp,parallel,exa,tavily,watch]"]
+all = ["monokl[crawl4ai,mcp,parallel,exa,tavily,watch]"]
 dev = [
     "pytest>=7.4",
     "pytest-cov>=4.1",
@@ -60,16 +60,29 @@ dev = [
 ]
 
 [project.scripts]
+monokl = "hyperresearch.cli:app"
 hyperresearch = "hyperresearch.cli:app"
 hpr = "hyperresearch.cli:app"
 
 [project.urls]
-Homepage = "https://github.com/jordan-gibbs/hyperresearch"
-Repository = "https://github.com/jordan-gibbs/hyperresearch"
-Issues = "https://github.com/jordan-gibbs/hyperresearch/issues"
+Homepage = "https://github.com/1jehuang/jcode"
+Repository = "https://github.com/1jehuang/jcode"
+Issues = "https://github.com/1jehuang/jcode/issues"
 
 [tool.hatch.build.targets.wheel]
 packages = ["src/hyperresearch"]
+artifacts = ["src/hyperresearch/jcode/**", "src/hyperresearch/licenses/**", "assets/**", "LICENSE", "UPSTREAM.md"]
+
+[tool.hatch.build.targets.sdist]
+include = [
+    "src/hyperresearch/**",
+    "tests/**",
+    "assets/**",
+    "LICENSE",
+    "UPSTREAM.md",
+    "README.md",
+    "pyproject.toml",
+]
 
 [tool.ruff]
 target-version = "py311"
