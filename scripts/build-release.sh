@@ -15,6 +15,6 @@ python3 -m pip wheel . --no-deps --wheel-dir "$DIST"
 (
   cd "$DIST"
   sha256sum monokl-0.1.0-*.whl > SHA256SUMS
+  sha256sum -c SHA256SUMS
 )
 echo "release artifacts: $DIST"
-
