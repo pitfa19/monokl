@@ -48,7 +48,9 @@ RETRIEVAL_KEYS = {
     "contract",
     "adapter_version",
     "crawl4ai_version",
+    "crawl4ai_config_digest",
     "requested_url",
+    "normalized_url",
     "final_url",
     "status",
     "http_status",
@@ -63,6 +65,7 @@ RETRIEVAL_KEYS = {
     "truncated",
     "error",
     "browser_isolation_policy",
+    "observed_limits",
 }
 ALLOWED_TRANSITIONS = {("absent", "initialized"), ("initialized", "scoped"), ("scoped", "retrieved")}
 
@@ -278,9 +281,13 @@ def _validate_retrieval_doc(value: Any) -> None:
     policy = value["browser_isolation_policy"]
     if not isinstance(policy, dict):
         raise ContractError("browser isolation policy must be recorded")
-    forbidden = ["credentials", "persistent_profile", "proxy", "downloads", "arbitrary_javascript", "llm_api"]
+    forbidden = ["credentials", "persistent_profile", "proxy", "downloads", "arbitrary_javascript", "llm_api", "cdp", "storage_state", "ignore_https_errors"]
     if any(policy.get(name) is not False for name in forbidden):
         raise ContractError("browser isolation policy enables a forbidden capability")
+    if policy.get("cache_mode") != "BYPASS" or not isinstance(value.get("crawl4ai_config_digest"), str):
+        raise ContractError("retrieval must record Crawl4AI cache-bypass config identity")
+    if not isinstance(value.get("normalized_url"), str) or not value["normalized_url"]:
+        raise ContractError("retrieval must record normalized URL")
 
 
 def _validate_transition_doc(value: Any) -> None:
