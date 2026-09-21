@@ -35,6 +35,18 @@ PLAYWRIGHT_BROWSERS_PATH="$PWD/.playwright" .venv/bin/playwright install chromiu
 .venv/bin/monokl resume ./research-run
 ```
 
+For a persistent user-local installation:
+
+```bash
+git clone https://github.com/pitfa19/monokl.git
+cd monokl
+./scripts/install.sh
+export PLAYWRIGHT_BROWSERS_PATH="$HOME/.local/share/monokl/browsers"
+monokl --help
+```
+
+The installer is create-only. It refuses to replace an existing install or command.
+
 The Crawl4AI path fails closed unless it can run in a user cgroup with a scrubbed environment, fixed browser policy, public HTTP(S)-only routing, and explicit CPU, memory, task, file, normalized-output byte, redirect, and time bounds. The byte limit bounds the retained normalized result, not upstream transfer size. See [Agent handoff](docs/agent-handoff.md) for the exact MOZAK-connected workflow.
 
 ## Target workflow
