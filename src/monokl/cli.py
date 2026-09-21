@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import Sequence
 
 from .contracts import Budget, ContractError, Scope, canonical_json_bytes
+from .export import export_run, validate_export
 from .ledger import STATE_DIR, add_retrieval, add_scope, approve_source_groups, create_evidence_synthesis, create_reasoning_task, create_run, create_source_groups, create_source_inventory, resume_run, submit_reasoning_result, validate_run
 from .retrieval import Crawl4AIRetriever, RetrievalBudgets, RetrievalRequest, StdlibRetriever
 
@@ -112,6 +113,11 @@ def parser() -> argparse.ArgumentParser:
     synthesis = commands.add_parser("evidence-synthesis")
     synthesis.add_argument("run_dir", type=Path)
     synthesis.add_argument("synthesis_json", type=Path)
+    export = commands.add_parser("export")
+    export.add_argument("run_dir", type=Path)
+    export.add_argument("output_dir", type=Path)
+    export_validate = commands.add_parser("export-validate")
+    export_validate.add_argument("output_dir", type=Path)
     retrieve = commands.add_parser("retrieve")
     retrieve.add_argument("run_dir", type=Path)
     retrieve.add_argument("url")
@@ -148,6 +154,10 @@ def main(argv: Sequence[str] | None = None) -> int:
             result = approve_source_groups(args.run_dir, json.loads(args.approval_json.read_text(encoding="utf-8")))
         elif args.command == "evidence-synthesis":
             result = create_evidence_synthesis(args.run_dir, json.loads(args.synthesis_json.read_text(encoding="utf-8")))
+        elif args.command == "export":
+            result = export_run(args.run_dir, args.output_dir)
+        elif args.command == "export-validate":
+            result = validate_export(args.output_dir)
         elif args.command == "retrieve":
             result = retrieve_run(
                 args.run_dir,

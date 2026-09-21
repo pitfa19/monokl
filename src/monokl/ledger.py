@@ -956,5 +956,5 @@ def resume_run(run_dir: Path) -> dict[str, Any]:
     if validation.state == "groups-approved":
         return {"schema_version": SCHEMA_VERSION, "command": "resume", "state": "ready", "next_phase": "evidence-synthesis"}
     if validation.state == "synthesized":
-        return {"schema_version": SCHEMA_VERSION, "command": "resume", "state": "blocked", "reason": "next approved goal not implemented: export-integration"}
+        return {"schema_version": SCHEMA_VERSION, "command": "resume", "state": "ready", "next_phase": "export"}
     return {"schema_version": SCHEMA_VERSION, "command": "resume", "state": "blocked", "reason": "unknown_state"}
