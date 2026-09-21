@@ -2,37 +2,38 @@
 
 ## Intent
 
-Build a small, local-first, agent-agnostic research runner that recreates the useful lifecycle of HyperResearch while using Crawl4AI only as a bounded retrieval substrate.
+Build a Jcode-native research extension derived from HyperResearch that preserves its complete research methodology, durable vault, evidence discipline, critique gates, citation auditing, and resumability while replacing Claude Code-specific skills and subagents with Jcode skills and swarm orchestration.
 
 ## Desired outcomes
 
-- Turn a scoped research question into durable, reviewable run artifacts.
-- Retrieve web sources through a narrow, security-hardened Crawl4AI adapter.
-- Let any agent or model participate through versioned JSON task and result contracts.
-- Require explicit owner review before grouped research advances or becomes a reusable skill.
-- Export provenance-complete, proposal-only artifacts that MOZAK can validate.
-- Remain substantially smaller and easier to audit than HyperResearch.
+- Preserve the pinned HyperResearch research engine rather than reimplementing it.
+- Expose one discoverable Jcode entry skill, `/monokl`, covering the full 16-stage workflow.
+- Translate every upstream specialist and reviewer role into bounded Jcode swarm tasks with configurable model routes.
+- Install the Python CLI and Jcode skill payload through one safe, repeatable package workflow.
+- Retain source provenance, contradiction analysis, explicit gaps, citation verification, and restartable vault artifacts.
+- Track the exact upstream revision, intentional delta, third-party licenses, and release identity.
 
 ## Boundaries
 
-- No dependency on Claude, OpenAI, Jcode, or another agent SDK in the core.
-- No autonomous acceptance of sources, claims, Concepts, plans, or generated skills.
-- Web content is untrusted data and cannot authorize actions.
-- No logged-in browser profiles, credentials, private-network crawling, embeddings, or permanent research vault in the first release.
-- Crawl4AI LLM extraction remains disabled. Retrieval and reasoning are separate boundaries.
-- Raw full text is temporary by default; durable artifacts retain bounded evidence, locators, metadata, and hashes.
+- Jcode is the only supported agent host for this release. Claude Code and Codex compatibility are out of scope.
+- The research methodology and load-bearing workflow stages are not simplified during the port.
+- Web and document content is untrusted data and cannot authorize actions.
+- Reviewer and audit roles remain separate from the work they evaluate.
+- Model substitution changes provenance only and never transfers workflow authority.
+- Existing Monokl v0.1.0 history and release artifacts remain recoverable.
+- JEPA-RNA is excluded from parity and release fixtures so the owner can test it separately.
 
 ## Assumptions
 
-- Python is the smallest practical integration layer for Crawl4AI.
-- Immutable run directories are sufficient before a shared SQLite index is justified.
-- A manual JSON packet adapter is the simplest proof of genuine agent independence.
-- MOZAK remains the system of record for project registration, accepted knowledge, and cross-project reuse.
+- HyperResearch commit `75b1ecfb2891184fad2cc1a2ddf9abe476f5b54c` is the pinned upstream baseline.
+- Python remains the implementation language for the imported research engine and CLI.
+- Jcode skills plus swarm task graphs can represent the upstream skill and subagent boundaries without changing methodology.
+- PyMuPDF is replaced only if a permissively licensed backend demonstrates equivalent or better compatibility on representative fixtures.
+- MOZAK remains the system of record for the accepted plan, project state, and release evidence.
 
-## Open questions
+## Open questions resolved during implementation
 
-- Which normalized Markdown representation stays stable enough across Crawl4AI upgrades?
-- Should the first production adapter invoke Crawl4AI in-process or through a subprocess boundary?
-- What minimum source locator survives HTML-to-Markdown conversion reliably?
-- When does an owner-supplied URL set need search discovery or adaptive crawling?
-- Which parts of the HyperResearch open-access recovery flow are worth reintroducing after the first pilots?
+- The PDF backend is selected through a recorded compatibility and licensing decision.
+- The exact Jcode role and stage mapping is captured in a machine-readable parity inventory.
+- The installer owns only receipt-pinned CLI and skill bytes and refuses drift or path hazards.
+- Release occurs only after upstream tests, offline fixtures, installed Jcode discovery, and bounded startup checks pass.
