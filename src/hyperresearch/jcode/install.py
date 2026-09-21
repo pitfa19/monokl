@@ -22,9 +22,7 @@ GLOBAL_FILES = {
     "parity-map.json": "jcode/maps/parity-map.json",
     "manifest.json": "jcode/manifest.json",
 }
-PROJECT_FILES = {
-    "SKILL.md": "jcode/project-skills/monokl-stage-template.md",
-}
+PROJECT_SKILL_RESOURCE_ROOT = "jcode/project-skills"
 
 
 class JcodeInstallError(RuntimeError):
@@ -43,6 +41,11 @@ class ManagedFile:
 
 def _payload_bytes(resource_name: str) -> bytes:
     return (resources.files("hyperresearch") / resource_name).read_bytes()
+
+
+def _project_skill_files() -> dict[str, str]:
+    root = resources.files("hyperresearch") / PROJECT_SKILL_RESOURCE_ROOT
+    return {entry.name: f"{PROJECT_SKILL_RESOURCE_ROOT}/{entry.name}" for entry in root.iterdir() if entry.name.endswith(".md")}
 
 
 def _safe_child(root: Path, relative: str) -> Path:
@@ -125,9 +128,12 @@ def install_jcode_payload(home: Path | None = None, project: Path | None = None)
     roots = [global_root]
     if project is not None:
         project_root = Path(project).resolve()
-        project_skill_root = project_root / ".jcode" / "skills" / "monokl-stage-reference"
-        roots.append(project_skill_root)
-        files.extend(ManagedFile(_safe_child(project_skill_root, name), _payload_bytes(resource)) for name, resource in PROJECT_FILES.items())
+        project_skills_root = project_root / ".jcode" / "skills"
+        for filename, resource in _project_skill_files().items():
+            skill_name = Path(filename).stem
+            project_skill_root = project_skills_root / skill_name
+            roots.append(project_skill_root)
+            files.append(ManagedFile(_safe_child(project_skill_root, "SKILL.md"), _payload_bytes(resource)))
     receipt_root = global_root
     receipt = _read_receipt(receipt_root)
     _verify_owned_or_absent(files, receipt)

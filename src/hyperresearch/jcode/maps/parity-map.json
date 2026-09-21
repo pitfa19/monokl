@@ -2,30 +2,267 @@
   "schema_version": 1,
   "product": "monokl",
   "methodology_source": "src/hyperresearch/skills",
-  "compatibility_commands": ["monokl", "hpr", "hyperresearch"],
-  "required_jcode_capabilities": ["skill", "todo", "swarm", "bash", "read", "write"],
-  "optional_jcode_capabilities": ["browser", "bg"],
+  "compatibility_commands": [
+    "monokl",
+    "hpr",
+    "hyperresearch"
+  ],
+  "required_jcode_capabilities": [
+    "skill",
+    "todo",
+    "swarm",
+    "bash",
+    "read",
+    "write"
+  ],
+  "optional_jcode_capabilities": [
+    "browser",
+    "bg"
+  ],
   "model_routes": {
     "config_key": "MONOKL_MODEL_ROUTES_JSON",
     "default_policy": "inherit coordinator route unless a stage-specific route is configured",
     "authority": "model substitution changes provenance only, not gate authority"
   },
   "stages": [
-    {"stage": 1, "upstream_skill": "hyperresearch-1-decompose", "jcode_skill": "monokl-1-decompose", "swarm_role": "coordinator", "depends_on": [], "artifacts": ["prompt-decomposition.json"], "review_gate": "self-check only"},
-    {"stage": 2, "upstream_skill": "hyperresearch-2-width-sweep", "jcode_skill": "monokl-2-width-sweep", "swarm_role": "fetcher/source-analyst workers", "depends_on": [1], "artifacts": ["width corpus notes", "claims files"], "review_gate": "source coverage gate"},
-    {"stage": 3, "upstream_skill": "hyperresearch-3-contradiction-graph", "jcode_skill": "monokl-3-contradiction-graph", "swarm_role": "contradiction analyst", "depends_on": [2], "artifacts": ["contradiction-graph.json"], "review_gate": "evidence-grounded conflict gate"},
-    {"stage": 4, "upstream_skill": "hyperresearch-4-loci-analysis", "jcode_skill": "monokl-4-loci-analysis", "swarm_role": "loci analysts", "depends_on": [2,3], "artifacts": ["loci-*.json"], "review_gate": "dedupe and clamp gate"},
-    {"stage": 5, "upstream_skill": "hyperresearch-5-depth-investigation", "jcode_skill": "monokl-5-depth-investigation", "swarm_role": "depth investigators", "depends_on": [4], "artifacts": ["interim depth notes"], "review_gate": "locus completion gate"},
-    {"stage": 6, "upstream_skill": "hyperresearch-6-cross-locus-reconcile", "jcode_skill": "monokl-6-cross-locus-reconcile", "swarm_role": "reconciler", "depends_on": [5], "artifacts": ["comparisons.md"], "review_gate": "cross-locus consistency gate"},
-    {"stage": 7, "upstream_skill": "hyperresearch-7-source-tensions", "jcode_skill": "monokl-7-source-tensions", "swarm_role": "tension analyst", "depends_on": [6], "artifacts": ["source tensions"], "review_gate": "tension coverage gate"},
-    {"stage": 8, "upstream_skill": "hyperresearch-8-corpus-critic", "jcode_skill": "monokl-8-corpus-critic", "swarm_role": "corpus critic", "depends_on": [7], "artifacts": ["corpus critic findings"], "review_gate": "corpus gap gate"},
-    {"stage": 9, "upstream_skill": "hyperresearch-9-evidence-digest", "jcode_skill": "monokl-9-evidence-digest", "swarm_role": "evidence digester", "depends_on": [8], "artifacts": ["evidence digest"], "review_gate": "claim minimum gate"},
-    {"stage": 10, "upstream_skill": "hyperresearch-10-triple-draft", "jcode_skill": "monokl-10-triple-draft", "swarm_role": "draft orchestrator workers", "depends_on": [9], "artifacts": ["draft candidates"], "review_gate": "three-draft separation gate"},
-    {"stage": 11, "upstream_skill": "hyperresearch-11-synthesize", "jcode_skill": "monokl-11-synthesize", "swarm_role": "synthesizer", "depends_on": [10], "artifacts": ["synthesized report"], "review_gate": "synthesis provenance gate"},
-    {"stage": 12, "upstream_skill": "hyperresearch-12-critics", "jcode_skill": "monokl-12-critics", "swarm_role": "dialectic/depth/width/instruction critics", "depends_on": [11], "artifacts": ["critic findings"], "review_gate": "independent critic gate"},
-    {"stage": 13, "upstream_skill": "hyperresearch-13-gap-fetch", "jcode_skill": "monokl-13-gap-fetch", "swarm_role": "gap fetchers", "depends_on": [12], "artifacts": ["gap sources"], "review_gate": "gap closure gate"},
-    {"stage": 14, "upstream_skill": "hyperresearch-14-patcher", "jcode_skill": "monokl-14-patcher", "swarm_role": "patcher", "depends_on": [13], "artifacts": ["patched report"], "review_gate": "patch traceability gate"},
-    {"stage": 15, "upstream_skill": "hyperresearch-15-polish", "jcode_skill": "monokl-15-polish", "swarm_role": "polish auditor", "depends_on": [14], "artifacts": ["polished report"], "review_gate": "style and citation density gate"},
-    {"stage": 16, "upstream_skill": "hyperresearch-16-readability-audit", "jcode_skill": "monokl-16-readability-audit", "swarm_role": "readability auditor", "depends_on": [15], "artifacts": ["readability findings", "final report"], "review_gate": "final readability gate"}
-  ]
+    {
+      "stage": 1,
+      "upstream_skill": "hyperresearch-1-decompose",
+      "jcode_skill": "monokl-1-decompose",
+      "swarm_role": "coordinator",
+      "depends_on": [],
+      "artifacts": [
+        "prompt-decomposition.json"
+      ],
+      "review_gate": "self-check only"
+    },
+    {
+      "stage": 1.5,
+      "upstream_skill": "hyperresearch-1-5-chapter-partition",
+      "jcode_skill": "monokl-1-5-chapter-partition",
+      "swarm_role": "chapter partitioner",
+      "depends_on": [
+        1
+      ],
+      "artifacts": [
+        "chapter plan"
+      ],
+      "review_gate": "dissertation chapter partition gate",
+      "tier": "dissertation"
+    },
+    {
+      "stage": 2,
+      "upstream_skill": "hyperresearch-2-width-sweep",
+      "jcode_skill": "monokl-2-width-sweep",
+      "swarm_role": "fetcher/source-analyst workers",
+      "depends_on": [
+        1
+      ],
+      "artifacts": [
+        "width corpus notes",
+        "claims files"
+      ],
+      "review_gate": "source coverage gate"
+    },
+    {
+      "stage": 3,
+      "upstream_skill": "hyperresearch-3-contradiction-graph",
+      "jcode_skill": "monokl-3-contradiction-graph",
+      "swarm_role": "contradiction analyst",
+      "depends_on": [
+        2
+      ],
+      "artifacts": [
+        "contradiction-graph.json"
+      ],
+      "review_gate": "evidence-grounded conflict gate"
+    },
+    {
+      "stage": 4,
+      "upstream_skill": "hyperresearch-4-loci-analysis",
+      "jcode_skill": "monokl-4-loci-analysis",
+      "swarm_role": "loci analysts",
+      "depends_on": [
+        2,
+        3
+      ],
+      "artifacts": [
+        "loci-*.json"
+      ],
+      "review_gate": "dedupe and clamp gate"
+    },
+    {
+      "stage": 5,
+      "upstream_skill": "hyperresearch-5-depth-investigation",
+      "jcode_skill": "monokl-5-depth-investigation",
+      "swarm_role": "depth investigators",
+      "depends_on": [
+        4
+      ],
+      "artifacts": [
+        "interim depth notes"
+      ],
+      "review_gate": "locus completion gate"
+    },
+    {
+      "stage": 6,
+      "upstream_skill": "hyperresearch-6-cross-locus-reconcile",
+      "jcode_skill": "monokl-6-cross-locus-reconcile",
+      "swarm_role": "reconciler",
+      "depends_on": [
+        5
+      ],
+      "artifacts": [
+        "comparisons.md"
+      ],
+      "review_gate": "cross-locus consistency gate"
+    },
+    {
+      "stage": 7,
+      "upstream_skill": "hyperresearch-7-source-tensions",
+      "jcode_skill": "monokl-7-source-tensions",
+      "swarm_role": "tension analyst",
+      "depends_on": [
+        6
+      ],
+      "artifacts": [
+        "source tensions"
+      ],
+      "review_gate": "tension coverage gate"
+    },
+    {
+      "stage": 8,
+      "upstream_skill": "hyperresearch-8-corpus-critic",
+      "jcode_skill": "monokl-8-corpus-critic",
+      "swarm_role": "corpus critic",
+      "depends_on": [
+        7
+      ],
+      "artifacts": [
+        "corpus critic findings"
+      ],
+      "review_gate": "corpus gap gate"
+    },
+    {
+      "stage": 9,
+      "upstream_skill": "hyperresearch-9-evidence-digest",
+      "jcode_skill": "monokl-9-evidence-digest",
+      "swarm_role": "evidence digester",
+      "depends_on": [
+        8
+      ],
+      "artifacts": [
+        "evidence digest"
+      ],
+      "review_gate": "claim minimum gate"
+    },
+    {
+      "stage": 10,
+      "upstream_skill": "hyperresearch-10-triple-draft",
+      "jcode_skill": "monokl-10-triple-draft",
+      "swarm_role": "draft orchestrator workers",
+      "depends_on": [
+        9
+      ],
+      "artifacts": [
+        "draft candidates"
+      ],
+      "review_gate": "three-draft separation gate"
+    },
+    {
+      "stage": 11,
+      "upstream_skill": "hyperresearch-11-synthesize",
+      "jcode_skill": "monokl-11-synthesize",
+      "swarm_role": "synthesizer",
+      "depends_on": [
+        10
+      ],
+      "artifacts": [
+        "synthesized report"
+      ],
+      "review_gate": "synthesis provenance gate"
+    },
+    {
+      "stage": 12,
+      "upstream_skill": "hyperresearch-12-critics",
+      "jcode_skill": "monokl-12-critics",
+      "swarm_role": "dialectic/depth/width/instruction critics",
+      "depends_on": [
+        11
+      ],
+      "artifacts": [
+        "critic findings"
+      ],
+      "review_gate": "independent critic gate"
+    },
+    {
+      "stage": 13,
+      "upstream_skill": "hyperresearch-13-gap-fetch",
+      "jcode_skill": "monokl-13-gap-fetch",
+      "swarm_role": "gap fetchers",
+      "depends_on": [
+        12
+      ],
+      "artifacts": [
+        "gap sources"
+      ],
+      "review_gate": "gap closure gate"
+    },
+    {
+      "stage": 14,
+      "upstream_skill": "hyperresearch-14-patcher",
+      "jcode_skill": "monokl-14-patcher",
+      "swarm_role": "patcher",
+      "depends_on": [
+        13
+      ],
+      "artifacts": [
+        "patched report"
+      ],
+      "review_gate": "patch traceability gate"
+    },
+    {
+      "stage": 14.5,
+      "upstream_skill": "hyperresearch-14-5-cite-check",
+      "jcode_skill": "monokl-14-5-cite-check",
+      "swarm_role": "cite checker",
+      "depends_on": [
+        14
+      ],
+      "artifacts": [
+        "cite-check-pairs.json",
+        "cite-check-findings.json",
+        "second patched report"
+      ],
+      "review_gate": "citation sentence binding gate"
+    },
+    {
+      "stage": 15,
+      "upstream_skill": "hyperresearch-15-polish",
+      "jcode_skill": "monokl-15-polish",
+      "swarm_role": "polish auditor",
+      "depends_on": [
+        14.5
+      ],
+      "artifacts": [
+        "polished report"
+      ],
+      "review_gate": "style and citation density gate"
+    },
+    {
+      "stage": 16,
+      "upstream_skill": "hyperresearch-16-readability-audit",
+      "jcode_skill": "monokl-16-readability-audit",
+      "swarm_role": "readability auditor",
+      "depends_on": [
+        15
+      ],
+      "artifacts": [
+        "readability findings",
+        "final report"
+      ],
+      "review_gate": "final readability gate"
+    }
+  ],
+  "stage_count": 18
 }
