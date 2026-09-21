@@ -8,7 +8,7 @@ from unittest import mock
 from urllib.error import HTTPError, URLError
 
 from monokl.cli import init_run, main, plan_run, retrieve_run, status
-from monokl.contracts import canonical_sha256
+from monokl.contracts import canonical_sha256, sha256_hex
 from monokl.ledger import RunLock, resume_run, validate_run
 from monokl.retrieval import Crawl4AIRetriever, RetrievalBudgets, RetrievalRequest, StdlibRetriever, browser_isolation_policy, check_public_url
 
@@ -241,6 +241,7 @@ class MonoklCliTests(unittest.TestCase):
             "file:///etc/passwd",
             "data:text/plain,hi",
             "custom://example.com",
+            "https://user:secret@example.com/private",
         ]:
             with self.subTest(url=url):
                 with self.assertRaises(ValueError):
@@ -317,8 +318,56 @@ class MonoklCliTests(unittest.TestCase):
         self.assertEqual(manifest["status"], "ok")
         self.assertEqual(manifest["crawl4ai_version"], "1.2.3")
         self.assertEqual(manifest["normalized_url"], "https://example.com/a")
+        self.assertEqual(manifest["content_sha256"], sha256_hex(body.encode("utf-8")))
+        self.assertNotEqual(manifest["content_sha256"], fake["content_sha256"])
         self.assertTrue(manifest["observed_limits"]["process_group"])
         self.assertEqual(manifest["browser_isolation_policy"]["cache_mode"], "BYPASS")
+
+    def test_crawl4ai_subprocess_env_exposes_only_explicit_browser_path(self) -> None:
+        request = RetrievalRequest("https://example.com", RetrievalBudgets(timeout_seconds=1), {})
+        captured = {}
+        captured_command = []
+
+        class FakeProcess:
+            pid = 999999
+            returncode = 0
+
+            def communicate(self, payload, timeout):
+                return ('{"status":"error","error":{"code":"fixture","message":"fixture"}}', "")
+
+        def fake_popen(*args, **kwargs):
+            captured_command.extend(args[0])
+            captured.update(kwargs["env"])
+            return FakeProcess()
+
+        with mock.patch.dict(os.environ, {"PLAYWRIGHT_BROWSERS_PATH": "/safe/browsers", "OPENAI_API_KEY": "secret", "HTTPS_PROXY": "secret"}), mock.patch(
+            "monokl.retrieval.subprocess.Popen", side_effect=fake_popen
+        ):
+            from monokl.retrieval import _run_crawl4ai_subprocess
+
+            _run_crawl4ai_subprocess(request, "0.9.3")
+        self.assertEqual(captured["PLAYWRIGHT_BROWSERS_PATH"], "/safe/browsers")
+        self.assertNotIn("OPENAI_API_KEY", captured)
+        self.assertNotIn("HTTPS_PROXY", captured)
+        self.assertIn("MemoryMax=4294967296", captured_command)
+        self.assertIn("TasksMax=256", captured_command)
+        self.assertIn("CPUQuota=100%", captured_command)
+        self.assertIn("RuntimeMaxSec=3.0s", captured_command)
+        self.assertIn("LimitFSIZE=67108864", captured_command)
+        self.assertIn("LimitNOFILE=128", captured_command)
+        self.assertIn("KillMode=control-group", captured_command)
+        self.assertIn("-i", captured_command)
+        self.assertFalse(any("OPENAI_API_KEY" in value or "HTTPS_PROXY" in value for value in captured_command))
+
+    def test_crawl4ai_subprocess_fails_closed_without_cgroup_runner(self) -> None:
+        request = RetrievalRequest("https://example.com", RetrievalBudgets(timeout_seconds=1), {})
+        with mock.patch("monokl.retrieval.shutil.which", return_value=None):
+            from monokl.retrieval import _run_crawl4ai_subprocess
+
+            result = _run_crawl4ai_subprocess(request, "0.9.3")
+        self.assertEqual(result["status"], "error")
+        self.assertEqual(result["error"]["code"], "isolation_unavailable")
+        self.assertEqual(result["observed_limits"]["memory_limit_mechanism"], "systemd-user-cgroup-v2")
 
     def test_crawl4ai_fake_boundary_refuses_browser_private_final_url(self) -> None:
         fake = {"status": "ok", "final_url": "http://127.0.0.1/private", "markdown": "x", "observed_limits": {"process_group": True}}
@@ -388,7 +437,7 @@ class MonoklCliTests(unittest.TestCase):
         except importlib.metadata.PackageNotFoundError:
             self.skipTest("crawl4ai is not installed")
         manifest = Crawl4AIRetriever(version).retrieve(RetrievalRequest("https://example.com", RetrievalBudgets(allowed_hosts=("example.com",)), {}))
-        self.assertIn(manifest["status"], {"ok", "partial", "error"})
+        self.assertIn(manifest["status"], {"ok", "partial"})
         self.assertEqual(manifest["crawl4ai_version"], version)
         self.assertIsNotNone(manifest["observed_limits"])
 

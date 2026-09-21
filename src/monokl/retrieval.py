@@ -6,7 +6,7 @@ import importlib.metadata
 import ipaddress
 import json
 import os
-import resource
+import shutil
 import signal
 import socket
 import subprocess
@@ -15,6 +15,7 @@ import tempfile
 import textwrap
 import time
 from dataclasses import asdict, dataclass
+from pathlib import Path
 from typing import Any, Protocol
 from urllib.error import HTTPError, URLError
 from urllib.parse import urljoin, urlparse, urlunparse
@@ -26,7 +27,7 @@ ADAPTER_VERSION = "monokl-retriever-v2"
 _ALLOWED_SCHEMES = {"http", "https"}
 _REFUSED_CONFIG_FIELDS = ("credentials", "profile", "proxy", "llm", "javascript", "download", "cdp", "storage")
 _DEFAULT_CPU_SECONDS = 20
-_DEFAULT_MEMORY_BYTES = 768 * 1024 * 1024
+_DEFAULT_MEMORY_BYTES = 4 * 1024 * 1024 * 1024
 _DEFAULT_TEMP_BYTES = 64 * 1024 * 1024
 
 
@@ -108,6 +109,9 @@ def _normalized_url(url: str) -> str:
 
 
 def check_public_url(url: str, budgets: RetrievalBudgets) -> dict[str, Any]:
+    supplied = urlparse(url)
+    if supplied.username is not None or supplied.password is not None:
+        raise ValueError("url_credentials_refused")
     normalized = _normalized_url(url)
     parsed = urlparse(normalized)
     if parsed.scheme not in _ALLOWED_SCHEMES:
@@ -203,7 +207,7 @@ def _base_manifest(request: RetrievalRequest, *, crawl4ai_version: str | None) -
         "adapter_version": ADAPTER_VERSION,
         "crawl4ai_version": crawl4ai_version,
         "crawl4ai_config_digest": config_digest,
-        "requested_url": request.url,
+        "requested_url": normalized,
         "normalized_url": normalized,
         "final_url": None,
         "status": "error",
@@ -334,7 +338,7 @@ class Crawl4AIRetriever:
                 markdown = markdown[: request.budgets.max_bytes_per_page]
                 manifest["truncated"] = True
                 manifest["error"] = {"code": "oversized_content", "message": "page exceeded byte budget"}
-            manifest["content_sha256"] = result.get("content_sha256") or sha256_hex(markdown)
+            manifest["content_sha256"] = sha256_hex(markdown)
             manifest["normalized_markdown_sha256"] = sha256_hex(markdown)
             manifest["normalized_markdown_bytes"] = len(markdown)
             manifest["status"] = "partial" if manifest["truncated"] else "ok"
@@ -346,23 +350,80 @@ class Crawl4AIRetriever:
 def _run_crawl4ai_subprocess(request: RetrievalRequest, crawl4ai_version: str) -> dict[str, Any]:
     payload = {"url": request.url, "budgets": asdict(request.budgets), "config_identity": _crawl4ai_config_identity(request.budgets), "crawl4ai_version": crawl4ai_version}
     timeout = max(1.0, float(request.budgets.timeout_seconds))
-    cpu_seconds = max(1, min(_DEFAULT_CPU_SECONDS, int(timeout) + 2))
+    runtime_max_seconds = max(1.0, min(float(_DEFAULT_CPU_SECONDS), timeout + 2.0))
     memory_bytes = _DEFAULT_MEMORY_BYTES
     temp_bytes = _DEFAULT_TEMP_BYTES
-    observed_limits = {"timeout_seconds": timeout, "cpu_seconds": cpu_seconds, "memory_bytes": memory_bytes, "temp_bytes": temp_bytes, "process_group": True}
+    observed_limits = {
+        "timeout_seconds": timeout,
+        "cpu_quota_percent": 100,
+        "runtime_max_seconds": runtime_max_seconds,
+        "cpu_limit_mechanism": "systemd-user-cgroup-v2",
+        "memory_bytes": memory_bytes,
+        "memory_limit_mechanism": "systemd-user-cgroup-v2",
+        "temp_bytes": temp_bytes,
+        "file_limit_mechanism": "systemd-limit-fsize",
+        "process_group": True,
+    }
     code = _crawl4ai_worker_code()
     with tempfile.TemporaryDirectory(prefix="monokl-crawl4ai-") as temp_dir:
         env = {"PATH": os.environ.get("PATH", ""), "PYTHONPATH": os.environ.get("PYTHONPATH", ""), "HOME": temp_dir, "TMPDIR": temp_dir}
+        for bus_name in ("XDG_RUNTIME_DIR", "DBUS_SESSION_BUS_ADDRESS"):
+            if os.environ.get(bus_name):
+                env[bus_name] = os.environ[bus_name]
+        browser_path = os.environ.get("PLAYWRIGHT_BROWSERS_PATH") or str(Path.home() / ".cache" / "ms-playwright")
+        env["PLAYWRIGHT_BROWSERS_PATH"] = browser_path
+
+        systemd_run = shutil.which("systemd-run")
+        if systemd_run is None:
+            return {
+                "status": "error",
+                "observed_limits": observed_limits,
+                "error": {"code": "isolation_unavailable", "message": "systemd-run is required for the Crawl4AI memory boundary"},
+            }
+
+        child_command = [
+            "/usr/bin/env",
+            "-i",
+            f"PATH={env['PATH']}",
+            f"PYTHONPATH={env['PYTHONPATH']}",
+            f"HOME={temp_dir}",
+            f"TMPDIR={temp_dir}",
+            f"PLAYWRIGHT_BROWSERS_PATH={browser_path}",
+            sys.executable,
+            "-I",
+            "-c",
+            code,
+        ]
+        command = [
+            systemd_run,
+            "--user",
+            "--pipe",
+            "--wait",
+            "--collect",
+            "--quiet",
+            "--property",
+            f"MemoryMax={memory_bytes}",
+            "--property",
+            "TasksMax=256",
+            "--property",
+            "CPUQuota=100%",
+            "--property",
+            f"RuntimeMaxSec={runtime_max_seconds}s",
+            "--property",
+            f"LimitFSIZE={temp_bytes}",
+            "--property",
+            "LimitNOFILE=128",
+            "--property",
+            "KillMode=control-group",
+            "--",
+            *child_command,
+        ]
 
         def limit_child() -> None:
             os.setsid()
-            resource.setrlimit(resource.RLIMIT_CPU, (cpu_seconds, cpu_seconds + 1))
-            resource.setrlimit(resource.RLIMIT_AS, (memory_bytes, memory_bytes))
-            resource.setrlimit(resource.RLIMIT_FSIZE, (temp_bytes, temp_bytes))
-            resource.setrlimit(resource.RLIMIT_NOFILE, (128, 128))
 
         proc = subprocess.Popen(
-            [sys.executable, "-I", "-c", code],
+            command,
             stdin=subprocess.PIPE,
             stdout=subprocess.PIPE,
             stderr=subprocess.PIPE,
@@ -387,7 +448,7 @@ def _run_crawl4ai_subprocess(request: RetrievalRequest, crawl4ai_version: str) -
 def _crawl4ai_worker_code() -> str:
     return textwrap.dedent(
         r'''
-        import asyncio, hashlib, ipaddress, json, socket, sys
+        import asyncio, ipaddress, json, socket, sys
         from urllib.parse import urlparse, urlunparse
 
         def normalized_url(url):
@@ -404,6 +465,9 @@ def _crawl4ai_worker_code() -> str:
             return ip.is_global and not (ip.is_loopback or ip.is_private or ip.is_link_local or ip.is_multicast or ip.is_reserved or ip.is_unspecified)
 
         def check_url(url, allowed_hosts):
+            supplied = urlparse(url)
+            if supplied.username is not None or supplied.password is not None:
+                raise RuntimeError('url_credentials_refused')
             parsed = urlparse(normalized_url(url))
             if parsed.scheme not in {'http', 'https'}:
                 raise RuntimeError(f'scheme_refused: {parsed.scheme or "missing"}')
@@ -451,6 +515,8 @@ def _crawl4ai_worker_code() -> str:
                 strategy = getattr(crawler, 'crawler_strategy', None)
                 if strategy is None or not hasattr(strategy, 'set_hook'):
                     raise RuntimeError('browser_interception_unavailable')
+                navigation_urls = [url]
+                redirect_error = None
                 async def on_page_context_created(page, context, **kwargs):
                     async def guard(route, request):
                         try:
@@ -460,17 +526,32 @@ def _crawl4ai_worker_code() -> str:
                             await route.abort()
                     await page.route('**/*', guard)
                     return page
+                async def after_goto(page, context, url, response, **kwargs):
+                    nonlocal navigation_urls, redirect_error
+                    if response is None:
+                        return page
+                    chain = []
+                    current = response.request
+                    while current is not None:
+                        chain.append(check_url(current.url, allowed_hosts))
+                        current = current.redirected_from
+                    navigation_urls = list(reversed(chain))
+                    if len(navigation_urls) - 1 > int(budgets.get('max_redirects', 0)):
+                        redirect_error = 'redirect_budget_exhausted'
+                    return page
                 strategy.set_hook('on_page_context_created', on_page_context_created)
+                strategy.set_hook('after_goto', after_goto)
                 result = await crawler.arun(url=url, config=run_config)
+            if redirect_error:
+                raise RuntimeError(redirect_error)
             final_url = normalized_url(getattr(result, 'url', None) or url)
             check_url(final_url, allowed_hosts)
             markdown = getattr(result, 'markdown', '') or getattr(result, 'cleaned_html', '') or ''
-            body = markdown.encode('utf-8')
             status_code = getattr(result, 'status_code', None)
             success = bool(getattr(result, 'success', True))
             if not success:
                 raise RuntimeError(getattr(result, 'error_message', 'crawl4ai_error'))
-            print(json.dumps({'status': 'ok', 'final_url': final_url, 'http_status': status_code, 'redirects': [], 'markdown': markdown, 'content_sha256': hashlib.sha256(body).hexdigest()}, sort_keys=True))
+            print(json.dumps({'status': 'ok', 'final_url': final_url, 'http_status': status_code, 'redirects': navigation_urls[1:], 'markdown': markdown}, sort_keys=True))
         try:
             asyncio.run(main())
         except Exception as error:
