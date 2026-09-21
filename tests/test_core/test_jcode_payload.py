@@ -6,7 +6,11 @@ from importlib import resources
 
 import pytest
 
-from hyperresearch.jcode.install import JcodeInstallError, install_jcode_payload, uninstall_jcode_payload
+from hyperresearch.jcode.install import (
+    JcodeInstallError,
+    install_jcode_payload,
+    uninstall_jcode_payload,
+)
 
 
 def test_jcode_payload_resources_and_parity_map_complete():

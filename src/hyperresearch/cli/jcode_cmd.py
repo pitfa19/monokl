@@ -7,7 +7,11 @@ from pathlib import Path
 import typer
 
 from hyperresearch.cli._output import output
-from hyperresearch.jcode.install import JcodeInstallError, install_jcode_payload, uninstall_jcode_payload
+from hyperresearch.jcode.install import (
+    JcodeInstallError,
+    install_jcode_payload,
+    uninstall_jcode_payload,
+)
 from hyperresearch.models.output import error, success
 
 app = typer.Typer(help="Install or remove Jcode skill payloads.")
