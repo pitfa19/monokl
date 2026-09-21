@@ -22,6 +22,8 @@ from .contracts import (
     sha256_hex,
     transition_contract,
     reasoning_task_contract,
+    evidence_audit_contract,
+    evidence_synthesis_contract,
     source_inventory_contract,
 )
 
@@ -81,7 +83,14 @@ RETRIEVAL_KEYS = {
     "browser_isolation_policy",
     "observed_limits",
 }
-ALLOWED_TRANSITIONS = {("absent", "initialized"), ("initialized", "scoped"), ("scoped", "retrieved"), ("retrieved", "tasked"), ("tasked", "reasoned"), ("reasoned", "inventoried"), ("inventoried", "grouped"), ("grouped", "groups-approved")}
+SYNTHESIS_KEYS = {"schema_version", "contract", "protocol", "pinned_inputs", "claims", "per_group_synthesis", "contradictions", "gaps", "unsupported_claims", "label_policy", "authority", "synthesis_sha256"}
+CLAIM_KEYS = {"claim_id", "group_id", "source_ids", "label", "text", "locators"}
+SYNTHESIS_GROUP_KEYS = {"group_id", "summary", "claim_ids", "limitations"}
+CONTRADICTION_KEYS = {"group_id", "claim_ids", "description"}
+GAP_KEYS = {"group_id", "description", "impact"}
+UNSUPPORTED_KEYS = {"claim_id", "group_id", "text", "reason"}
+AUDIT_KEYS = {"schema_version", "contract", "protocol", "synthesis_sha256", "status", "checks", "deterministic", "authority", "audit_sha256"}
+ALLOWED_TRANSITIONS = {("absent", "initialized"), ("initialized", "scoped"), ("scoped", "retrieved"), ("retrieved", "tasked"), ("tasked", "reasoned"), ("reasoned", "inventoried"), ("inventoried", "grouped"), ("grouped", "groups-approved"), ("groups-approved", "synthesized")}
 
 
 @dataclass(frozen=True)
@@ -365,6 +374,28 @@ def approve_source_groups(run_dir: Path, payload: dict[str, Any]) -> dict[str, A
         _write_new(_transition_path(state, sequence, "source-group-approval"), transition)
     return {"schema_version": SCHEMA_VERSION, "command": "source-group-approval", "state": "groups-approved", "approval": payload}
 
+
+def create_evidence_synthesis(run_dir: Path, payload: dict[str, Any]) -> dict[str, Any]:
+    state = run_dir / STATE_DIR
+    if not state.is_dir() or state.is_symlink():
+        raise ContractError("run is not initialized")
+    with RunLock(state):
+        current = validate_run(run_dir, held_lock=True)
+        if not current.valid:
+            raise ContractError("run is invalid; validate before resuming writes")
+        if current.state != "groups-approved":
+            raise FileExistsError("evidence synthesis requires approved groups and is create-only")
+        _validate_synthesis_doc(payload, state)
+        audit = _audit_synthesis(payload, state)
+        if audit["status"] != "passed":
+            raise ContractError("evidence synthesis audit did not pass")
+        synthesis_artifact = _artifact(state, "evidence-synthesis", "monokl.evidence_synthesis", payload)
+        audit_artifact = _artifact(state, "evidence-audit", "monokl.evidence_audit", audit)
+        sequence = _next_sequence(state)
+        transition = transition_contract(sequence=sequence, transition_id="evidence-synthesis", from_state="groups-approved", to_state="synthesized", artifacts=[synthesis_artifact, audit_artifact], previous_sha256=_latest_transition_sha256(state))
+        _write_new(_transition_path(state, sequence, "evidence-synthesis"), transition)
+    return {"schema_version": SCHEMA_VERSION, "command": "evidence-synthesis", "state": "synthesized", "synthesis": payload, "audit": audit}
+
 def _validate_run_doc(value: Any) -> None:
     if not isinstance(value, dict):
         raise ContractError("run must be an object")
@@ -645,6 +676,108 @@ def _validate_approval_doc(value: Any, inventory: dict[str, Any] | None = None, 
     if groups is not None and value["groups_sha256"] != groups["groups_sha256"]:
         raise ContractError("source group approval pins wrong groups hash")
 
+
+def _expected_artifact_sha(state: Path, name: str) -> str:
+    path = state / ARTIFACT_DIR / f"{name}.json"
+    if not path.is_file() or path.is_symlink():
+        raise ContractError(f"required artifact is missing: {name}")
+    return sha256_hex(path.read_bytes())
+
+
+def _audit_synthesis(value: dict[str, Any], state: Path) -> dict[str, Any]:
+    checks: list[dict[str, Any]] = []
+    def check(name: str, passed: bool, message: str) -> None:
+        checks.append({"check": name, "status": "passed" if passed else "failed", "message": message})
+    try:
+        _validate_synthesis_doc(value, state, strict=False)
+        failed = False
+    except Exception as error:
+        failed = True
+        check("schema", False, str(error))
+    if not failed:
+        pins = value["pinned_inputs"]
+        expected = {
+            "inventory_sha256": _read_json(state / ARTIFACT_DIR / "source-inventory.json")["inventory_sha256"],
+            "groups_sha256": _read_json(state / ARTIFACT_DIR / "source-groups.json")["groups_sha256"],
+            "approval_sha256": _read_json(state / ARTIFACT_DIR / "source-group-approval.json")["approval_sha256"],
+            "reasoning_sha256": _expected_artifact_sha(state, "reasoning-result"),
+        }
+        check("pins", pins == expected, "synthesis pins approved inventory, groups, approval, and reasoning hashes")
+        groups = _read_json(state / ARTIFACT_DIR / "source-groups.json")
+        covered = {item["group_id"] for item in value["per_group_synthesis"]}
+        expected_groups = {item["group_id"] for item in groups["groups"]}
+        check("group_coverage", covered == expected_groups, "every approved group has one synthesis entry")
+        source_ids = {s["source_id"] for s in _read_json(state / ARTIFACT_DIR / "source-inventory.json")["sources"]}
+        locators_ok = all(locator.get("source_id") in source_ids and locator.get("locator") for claim in value["claims"] for locator in claim["locators"])
+        check("citations_resolve", locators_ok, "all claim locators resolve to known source ids and concrete locators")
+        unsupported = {item["claim_id"] for item in value["unsupported_claims"]}
+        supported_claims_ok = all(claim["claim_id"] in unsupported or claim["locators"] for claim in value["claims"])
+        check("unsupported_tracking", supported_claims_ok, "claims without support are tracked separately")
+    status = "failed" if any(item["status"] != "passed" for item in checks) else "passed"
+    return evidence_audit_contract(synthesis_sha256=value.get("synthesis_sha256", ""), status=status, checks=checks)
+
+
+def _validate_synthesis_doc(value: Any, state: Path | None = None, *, strict: bool = True) -> None:
+    if not isinstance(value, dict):
+        raise ContractError("evidence synthesis must be an object")
+    require_keys(value, SYNTHESIS_KEYS, SYNTHESIS_KEYS, "evidence synthesis")
+    if value["schema_version"] != SCHEMA_VERSION or value["contract"] != "monokl.evidence_synthesis" or value["protocol"] != "monokl.evidence_synthesis.v2":
+        raise ContractError("evidence synthesis has unsupported schema, contract, or protocol")
+    if value["authority"] != "proposal_only":
+        raise ContractError("evidence synthesis authority boundary changed")
+    unsigned = {key: item for key, item in value.items() if key != "synthesis_sha256"}
+    if value["synthesis_sha256"] != canonical_sha256(unsigned):
+        raise ContractError("evidence synthesis hash drift")
+    if state is not None:
+        pins = value["pinned_inputs"]
+        if pins.get("inventory_sha256") != _read_json(state / ARTIFACT_DIR / "source-inventory.json")["inventory_sha256"]:
+            raise ContractError("evidence synthesis pins wrong inventory hash")
+        if pins.get("groups_sha256") != _read_json(state / ARTIFACT_DIR / "source-groups.json")["groups_sha256"]:
+            raise ContractError("evidence synthesis pins wrong groups hash")
+        if pins.get("approval_sha256") != _read_json(state / ARTIFACT_DIR / "source-group-approval.json")["approval_sha256"]:
+            raise ContractError("evidence synthesis pins wrong approval hash")
+        if pins.get("reasoning_sha256") != _expected_artifact_sha(state, "reasoning-result"):
+            raise ContractError("evidence synthesis pins wrong reasoning hash")
+    groups = _read_json(state / ARTIFACT_DIR / "source-groups.json") if state is not None else {"groups": []}
+    group_ids = {g["group_id"] for g in groups["groups"]}
+    source_by_group = {g["group_id"]: set(g["source_ids"]) for g in groups["groups"]}
+    claim_ids: set[str] = set()
+    for claim in value["claims"]:
+        require_keys(claim, CLAIM_KEYS, CLAIM_KEYS, "evidence synthesis claim")
+        if claim["label"] not in {"verified_observation", "inference"}:
+            raise ContractError("evidence synthesis claim label must be verified_observation or inference")
+        if state is not None and claim["group_id"] not in group_ids:
+            raise ContractError("evidence synthesis claim references missing group")
+        if claim["claim_id"] in claim_ids:
+            raise ContractError("evidence synthesis claim ids must be unique")
+        claim_ids.add(claim["claim_id"])
+        if not claim["locators"]:
+            raise ContractError("evidence synthesis claim requires at least one locator")
+        for locator in claim["locators"]:
+            require_keys(locator, SOURCE_LOCATOR_KEYS | {"source_id"}, SOURCE_LOCATOR_KEYS | {"source_id"}, "evidence synthesis locator")
+            if state is not None and locator["source_id"] not in source_by_group.get(claim["group_id"], set()):
+                raise ContractError("evidence synthesis locator references source outside claim group")
+            path = _safe_child(state, locator["artifact_path"]) if state is not None else None
+            if state is not None and (not path.is_file() or path.is_symlink() or sha256_hex(path.read_bytes()) != locator["artifact_sha256"]):
+                raise ContractError("evidence synthesis locator source hash drift")
+    synthesized_groups = set()
+    for item in value["per_group_synthesis"]:
+        require_keys(item, SYNTHESIS_GROUP_KEYS, SYNTHESIS_GROUP_KEYS, "per-group synthesis")
+        synthesized_groups.add(item["group_id"])
+        if any(cid not in claim_ids for cid in item["claim_ids"]):
+            raise ContractError("per-group synthesis references unknown claim")
+    if state is not None and synthesized_groups != group_ids:
+        raise ContractError("evidence synthesis missing approved group coverage")
+    for collection, keys, name in [(value["contradictions"], CONTRADICTION_KEYS, "contradiction"), (value["gaps"], GAP_KEYS, "gap"), (value["unsupported_claims"], UNSUPPORTED_KEYS, "unsupported claim")]:
+        if not isinstance(collection, list):
+            raise ContractError(f"evidence synthesis {name}s must be a list")
+        for item in collection:
+            require_keys(item, keys, keys, f"evidence synthesis {name}")
+            if name == "contradiction" and any(cid not in claim_ids for cid in item["claim_ids"]):
+                raise ContractError("evidence synthesis contradiction references unknown claim")
+    if strict and _audit_synthesis(value, state)["status"] != "passed":
+        raise ContractError("evidence synthesis deterministic audit failed")
+
 def _validate_transition_doc(value: Any) -> None:
     if not isinstance(value, dict):
         raise ContractError("transition must be an object")
@@ -770,6 +903,13 @@ def validate_run(run_dir: Path, *, held_lock: bool = False) -> ValidationResult:
                     inventory = _read_json(inventory_path) if inventory_path.exists() and not inventory_path.is_symlink() else None
                     groups = _read_json(groups_path) if groups_path.exists() and not groups_path.is_symlink() else None
                     _validate_approval_doc(artifact_json, inventory, groups)
+                elif ref["contract"] == "monokl.evidence_synthesis":
+                    _validate_synthesis_doc(artifact_json, state)
+                elif ref["contract"] == "monokl.evidence_audit":
+                    require_keys(artifact_json, AUDIT_KEYS, AUDIT_KEYS, "evidence audit")
+                    unsigned = {key: item for key, item in artifact_json.items() if key != "audit_sha256"}
+                    if artifact_json["audit_sha256"] != canonical_sha256(unsigned) or artifact_json["status"] != "passed":
+                        raise ContractError("evidence audit hash drift or non-passing status")
                 else:
                     raise ContractError(f"unknown artifact contract: {ref['contract']}")
             expected_state = transition["to_state"]
@@ -814,5 +954,7 @@ def resume_run(run_dir: Path) -> dict[str, Any]:
     if validation.state == "grouped":
         return {"schema_version": SCHEMA_VERSION, "command": "resume", "state": "ready", "next_phase": "source-group-approval"}
     if validation.state == "groups-approved":
-        return {"schema_version": SCHEMA_VERSION, "command": "resume", "state": "blocked", "reason": "next approved goal not implemented: evidence-synthesis"}
+        return {"schema_version": SCHEMA_VERSION, "command": "resume", "state": "ready", "next_phase": "evidence-synthesis"}
+    if validation.state == "synthesized":
+        return {"schema_version": SCHEMA_VERSION, "command": "resume", "state": "blocked", "reason": "next approved goal not implemented: export-integration"}
     return {"schema_version": SCHEMA_VERSION, "command": "resume", "state": "blocked", "reason": "unknown_state"}

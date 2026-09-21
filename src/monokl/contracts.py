@@ -221,3 +221,40 @@ def group_approval_contract(*, owner: str, inventory_sha256: str, groups_sha256:
         "authority": "owner_approval_only",
     }
     return {**payload, "approval_sha256": canonical_sha256(payload)}
+
+
+
+def evidence_synthesis_contract(*, inventory_sha256: str, groups_sha256: str, approval_sha256: str, reasoning_sha256: str, claims: list[dict[str, Any]], per_group_synthesis: list[dict[str, Any]], contradictions: list[dict[str, Any]], gaps: list[dict[str, Any]], unsupported_claims: list[dict[str, Any]]) -> dict[str, Any]:
+    payload = {
+        "schema_version": SCHEMA_VERSION,
+        "contract": "monokl.evidence_synthesis",
+        "protocol": "monokl.evidence_synthesis.v2",
+        "pinned_inputs": {
+            "inventory_sha256": inventory_sha256,
+            "groups_sha256": groups_sha256,
+            "approval_sha256": approval_sha256,
+            "reasoning_sha256": reasoning_sha256,
+        },
+        "claims": claims,
+        "per_group_synthesis": per_group_synthesis,
+        "contradictions": contradictions,
+        "gaps": gaps,
+        "unsupported_claims": unsupported_claims,
+        "label_policy": "each claim is explicitly labeled verified_observation or inference",
+        "authority": "proposal_only",
+    }
+    return {**payload, "synthesis_sha256": canonical_sha256(payload)}
+
+
+def evidence_audit_contract(*, synthesis_sha256: str, status: str, checks: list[dict[str, Any]]) -> dict[str, Any]:
+    payload = {
+        "schema_version": SCHEMA_VERSION,
+        "contract": "monokl.evidence_audit",
+        "protocol": "monokl.evidence_audit.v2",
+        "synthesis_sha256": synthesis_sha256,
+        "status": status,
+        "checks": checks,
+        "deterministic": True,
+        "authority": "proposal_only",
+    }
+    return {**payload, "audit_sha256": canonical_sha256(payload)}
