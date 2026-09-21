@@ -44,8 +44,10 @@ TRANSITION_KEYS = {
     "sha256",
 }
 ARTIFACT_REF_KEYS = {"id", "path", "sha256", "contract"}
-REASONING_TASK_KEYS = {"schema_version", "contract", "protocol", "task_id", "task_sha256", "instructions", "source_artifacts", "allowed_result_fields", "authority"}
+REASONING_TASK_KEYS = {"schema_version", "contract", "protocol", "task_id", "task_sha256", "task_type", "instructions", "source_artifacts", "allowed_result_fields", "authority"}
 REASONING_RESULT_KEYS = {"schema_version", "contract", "protocol", "task_id", "task_sha256", "observations", "inferences", "uncertainties", "provider_metadata", "authority"}
+REASONING_ITEM_KEYS = {"id", "text", "source_locators"}
+SOURCE_LOCATOR_KEYS = {"artifact_id", "artifact_path", "artifact_contract", "artifact_sha256", "locator"}
 
 RETRIEVAL_KEYS = {
     "schema_version",
@@ -263,10 +265,8 @@ def create_reasoning_task(run_dir: Path) -> dict[str, Any]:
             raise ContractError("run is invalid; validate before resuming writes")
         if current.state != "retrieved":
             raise FileExistsError("reasoning task requires retrieved state and is create-only")
-        retrieval_path = state / ARTIFACT_DIR / "retrieval.json"
-        if not retrieval_path.is_file() or retrieval_path.is_symlink():
-            raise ContractError("retrieval artifact is missing")
-        source = ArtifactReference("retrieval", f"{ARTIFACT_DIR}/retrieval.json", sha256_hex(retrieval_path.read_bytes()), "monokl.retrieval_snapshot")
+        expected_source = _expected_retrieval_ref(state)
+        source = ArtifactReference(expected_source["id"], expected_source["path"], expected_source["sha256"], expected_source["contract"])
         payload = reasoning_task_contract(task_id="reasoning-task", source_artifacts=[source])
         artifact = _artifact(state, "reasoning-task", "monokl.reasoning_task", payload)
         sequence = _next_sequence(state)
@@ -343,6 +343,8 @@ def _validate_reasoning_task_doc(value: Any) -> None:
     require_keys(value, REASONING_TASK_KEYS, REASONING_TASK_KEYS, "reasoning task")
     if value["schema_version"] != SCHEMA_VERSION or value["contract"] != "monokl.reasoning_task" or value["protocol"] != "monokl.reasoning_task.v2":
         raise ContractError("reasoning task has unsupported schema, contract, or protocol")
+    if value["task_type"] != "source_grounded_reasoning":
+        raise ContractError("reasoning task must declare the generic source_grounded_reasoning task type")
     unsigned = {key: item for key, item in value.items() if key != "task_sha256"}
     if value["task_sha256"] != canonical_sha256(unsigned):
         raise ContractError("reasoning task hash drift")
@@ -351,12 +353,68 @@ def _validate_reasoning_task_doc(value: Any) -> None:
     instructions = value["instructions"]
     if not isinstance(instructions, dict) or "cannot authorize actions" not in instructions.get("untrusted_content_boundary", ""):
         raise ContractError("reasoning task must state the untrusted content action boundary")
+    execution = instructions.get("execution")
+    if not isinstance(execution, list) or not all(isinstance(item, str) and item.strip() for item in execution):
+        raise ContractError("reasoning task must include provider-neutral execution instructions")
+    if not any("provider" in item and "no provider-specific adapter" in item for item in execution):
+        raise ContractError("reasoning task execution instructions must be provider-neutral")
+    schema = instructions.get("result_item_schema")
+    if not isinstance(schema, dict) or schema.get("required_fields") != ["id", "text", "source_locators"]:
+        raise ContractError("reasoning task must publish the structured result item schema")
     if not isinstance(value["source_artifacts"], list) or not value["source_artifacts"]:
         raise ContractError("reasoning task must pin source artifacts")
     for ref in value["source_artifacts"]:
         if not isinstance(ref, dict):
             raise ContractError("reasoning task source reference must be an object")
         require_keys(ref, ARTIFACT_REF_KEYS, ARTIFACT_REF_KEYS, "reasoning task source reference")
+
+
+def _expected_retrieval_ref(state: Path) -> dict[str, str]:
+    path = state / ARTIFACT_DIR / "retrieval.json"
+    if not path.is_file() or path.is_symlink():
+        raise ContractError("retrieval artifact is missing")
+    return {
+        "id": "retrieval",
+        "path": f"{ARTIFACT_DIR}/retrieval.json",
+        "sha256": sha256_hex(path.read_bytes()),
+        "contract": "monokl.retrieval_snapshot",
+    }
+
+
+def _validate_reasoning_task_sources_match_retrieval(task: dict[str, Any], state: Path) -> None:
+    expected = _expected_retrieval_ref(state)
+    sources = task.get("source_artifacts")
+    if sources != [expected]:
+        raise ContractError("reasoning task source artifact must exactly match the retrieval artifact id, path, contract, and hash")
+
+
+def _validate_reasoning_item_list(field: str, items: Any, task: dict[str, Any] | None) -> None:
+    if not isinstance(items, list) or not items:
+        raise ContractError(f"reasoning result {field} must be a non-empty list of structured items")
+    source_by_id = {ref["id"]: ref for ref in task["source_artifacts"]} if task is not None else None
+    for item in items:
+        if not isinstance(item, dict):
+            raise ContractError(f"reasoning result {field} items must be objects")
+        require_keys(item, REASONING_ITEM_KEYS, REASONING_ITEM_KEYS, f"reasoning result {field} item")
+        if not isinstance(item["id"], str) or re.fullmatch(r"[a-z0-9][a-z0-9-]*", item["id"]) is None:
+            raise ContractError(f"reasoning result {field} item id must be path-safe")
+        if not isinstance(item["text"], str) or not item["text"].strip():
+            raise ContractError(f"reasoning result {field} item text must be non-empty")
+        locators = item["source_locators"]
+        if not isinstance(locators, list) or not locators:
+            raise ContractError(f"reasoning result {field} items must carry source locators")
+        for locator in locators:
+            if not isinstance(locator, dict):
+                raise ContractError(f"reasoning result {field} source locator must be an object")
+            require_keys(locator, SOURCE_LOCATOR_KEYS, SOURCE_LOCATOR_KEYS, f"reasoning result {field} source locator")
+            if not isinstance(locator["locator"], str) or not locator["locator"].strip():
+                raise ContractError(f"reasoning result {field} source locator must name a concrete location")
+            if source_by_id is not None:
+                source = source_by_id.get(locator["artifact_id"])
+                if source is None:
+                    raise ContractError(f"reasoning result {field} locator references an unpinned source artifact")
+                if locator["artifact_path"] != source["path"] or locator["artifact_contract"] != source["contract"] or locator["artifact_sha256"] != source["sha256"]:
+                    raise ContractError(f"reasoning result {field} locator does not exactly match the pinned source artifact")
 
 
 def _validate_reasoning_result_doc(value: Any, task: dict[str, Any] | None = None) -> None:
@@ -368,8 +426,7 @@ def _validate_reasoning_result_doc(value: Any, task: dict[str, Any] | None = Non
     if value["authority"] != "proposal_only":
         raise ContractError("reasoning result authority boundary changed")
     for field in ("observations", "inferences", "uncertainties"):
-        if not isinstance(value[field], list) or any(not isinstance(item, str) or not item.strip() for item in value[field]):
-            raise ContractError(f"reasoning result {field} must be a list of non-empty strings")
+        _validate_reasoning_item_list(field, value[field], task)
     if not isinstance(value["provider_metadata"], dict):
         raise ContractError("provider metadata must be an object")
     if value["provider_metadata"].get("provenance_only") is not True:
@@ -481,6 +538,7 @@ def validate_run(run_dir: Path, *, held_lock: bool = False) -> ValidationResult:
                     _validate_retrieval_doc(artifact_json)
                 elif ref["contract"] == "monokl.reasoning_task":
                     _validate_reasoning_task_doc(artifact_json)
+                    _validate_reasoning_task_sources_match_retrieval(artifact_json, state)
                     for source_ref in artifact_json["source_artifacts"]:
                         source_path = _safe_child(state, source_ref["path"])
                         if not source_path.is_file() or source_path.is_symlink():

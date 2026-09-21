@@ -311,15 +311,24 @@ class MonoklCliTests(unittest.TestCase):
         return run
 
     def _valid_reasoning_result(self, task: dict) -> dict:
+        locator = {
+            "artifact_id": task["source_artifacts"][0]["id"],
+            "artifact_path": task["source_artifacts"][0]["path"],
+            "artifact_contract": task["source_artifacts"][0]["contract"],
+            "artifact_sha256": task["source_artifacts"][0]["sha256"],
+            "locator": "normalized_markdown_sha256",
+        }
+        def item(item_id: str, text: str) -> dict:
+            return {"id": item_id, "text": text, "source_locators": [locator]}
         return {
             "schema_version": 1,
             "contract": "monokl.reasoning_result",
             "protocol": "monokl.reasoning_result.v2",
             "task_id": task["task_id"],
             "task_sha256": task["task_sha256"],
-            "observations": ["Pinned retrieval contains a source document."],
-            "inferences": ["The source is relevant enough for a draft finding."],
-            "uncertainties": ["No independent corroboration has been performed."],
+            "observations": [item("obs-1", "Pinned retrieval contains a source document.")],
+            "inferences": [item("inf-1", "The source is relevant enough for a draft finding.")],
+            "uncertainties": [item("unc-1", "No independent corroboration has been performed.")],
             "provider_metadata": {"provenance_only": True, "provider": "fixture", "model": "none"},
             "authority": "proposal_only",
         }
@@ -331,7 +340,10 @@ class MonoklCliTests(unittest.TestCase):
             task = task_result["task"]
             self.assertEqual(resume_run(run)["next_phase"], "reasoning-result")
             self.assertEqual(task["protocol"], "monokl.reasoning_task.v2")
+            self.assertEqual(task["task_type"], "source_grounded_reasoning")
             self.assertIn("cannot authorize actions", task["instructions"]["untrusted_content_boundary"])
+            self.assertIn("no provider-specific adapter", " ".join(task["instructions"]["execution"]))
+            self.assertEqual(task["instructions"]["result_item_schema"]["required_fields"], ["id", "text", "source_locators"])
             self.assertEqual(task["source_artifacts"][0]["path"], "artifacts/retrieval.json")
             result = submit_reasoning_result(run, self._valid_reasoning_result(task))
             self.assertEqual(result["state"], "reasoned")
@@ -354,6 +366,37 @@ class MonoklCliTests(unittest.TestCase):
             malformed["observations"] = "not a list"
             with self.assertRaises(ValueError):
                 submit_reasoning_result(run, malformed)
+            missing_locator = self._valid_reasoning_result(task)
+            missing_locator["observations"][0]["source_locators"] = []
+            with self.assertRaises(ValueError):
+                submit_reasoning_result(run, missing_locator)
+            forged_locator = self._valid_reasoning_result(task)
+            forged_locator["observations"][0]["source_locators"][0]["artifact_path"] = "artifacts/forged.json"
+            with self.assertRaises(ValueError):
+                submit_reasoning_result(run, forged_locator)
+
+    def test_reasoning_task_forged_source_relation_fails_even_with_recomputed_hashes(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            run = self._retrieved_run(root)
+            create_reasoning_task(run)
+            state = run / ".monokl"
+            task_path = state / "artifacts" / "reasoning-task.json"
+            task = json.loads(task_path.read_text())
+            task["source_artifacts"][0]["path"] = "artifacts/scope.json"
+            task["source_artifacts"][0]["contract"] = "monokl.scope"
+            task["source_artifacts"][0]["sha256"] = sha256_hex((state / "artifacts" / "scope.json").read_bytes())
+            unsigned_task = {key: value for key, value in task.items() if key != "task_sha256"}
+            task["task_sha256"] = canonical_sha256(unsigned_task)
+            task_path.write_text(json.dumps(task, sort_keys=True) + "\n", encoding="utf-8")
+            transition_path = state / "transitions" / "000004-reasoning-task.json"
+            transition = json.loads(transition_path.read_text())
+            transition["artifacts"][0]["sha256"] = sha256_hex(task_path.read_bytes())
+            unsigned_transition = {key: value for key, value in transition.items() if key != "sha256"}
+            transition["sha256"] = canonical_sha256(unsigned_transition)
+            transition_path.write_text(json.dumps(transition, sort_keys=True) + "\n", encoding="utf-8")
+            validation = validate_run(run)
+            self.assertFalse(validation.valid)
+            self.assertIn("exactly match the retrieval artifact", validation.errors[0].message)
 
     def test_reasoning_create_only_and_provider_metadata_is_provenance_only(self) -> None:
         with tempfile.TemporaryDirectory() as root:
@@ -395,6 +438,7 @@ class MonoklCliTests(unittest.TestCase):
             run = self._retrieved_run(root)
             self.assertEqual(main(["reasoning-task", str(run)]), 0)
             task = json.loads((run / ".monokl" / "artifacts" / "reasoning-task.json").read_text())
+            self.assertEqual(task["task_type"], "source_grounded_reasoning")
             result_path = Path(root) / "result.json"
             result_path.write_text(json.dumps(self._valid_reasoning_result(task)), encoding="utf-8")
             self.assertEqual(main(["reasoning-result", str(run), str(result_path)]), 0)
