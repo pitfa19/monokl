@@ -6,7 +6,7 @@
 
 A small, agent-agnostic research runner with durable evidence and explicit human approval.
 
-> **Status:** ledger and bounded retrieval work. Reasoning, grouping, synthesis, and export are not implemented yet.
+> **Status:** local lifecycle is implemented through proposal-only export bundles: ledger, retrieval, reasoning packets, inventory, approved groups, synthesis, audit, receipt, and resume.
 
 ## Why
 
@@ -51,13 +51,13 @@ The Crawl4AI path fails closed unless it can run in a user cgroup with a scrubbe
 
 ## Target workflow
 
-`scope → retrieve → group → approve → reason → audit → export`
+`scope → retrieve → reason → inventory → group → approve groups → synthesize → audit → export`
 
-Retrieved content is always untrusted. Runs are create-only. Private networks, credentials, persistent browser profiles, downloads, and retrieval-layer LLM calls are outside the first release.
+Retrieved content is always untrusted. Runs and exports are create-only. Exports write `report.md`, `evidence.json`, `gaps.json`, `receipt.json`, and `mozak-proposal.json`; the proposal is `proposal_only` and never claims MOZAK acceptance or promotion. Private networks, credentials, persistent browser profiles, downloads, and retrieval-layer LLM calls are outside the first release.
 
 ## Plan
 
-Development is split into MOZAK goals. The durable ledger and retrieval goals are implemented locally. Later goals require separate approval.
+Development is split into MOZAK goals. The current implemented goal is `goal-export-integration` v2. No release version bump has been made yet.
 
 - [Development plan](docs/development-plan.md)
 - [Architecture](docs/architecture.md)

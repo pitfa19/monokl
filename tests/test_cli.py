@@ -9,6 +9,7 @@ from urllib.error import HTTPError, URLError
 
 from monokl.cli import init_run, main, plan_run, retrieve_run, status
 from monokl.contracts import canonical_sha256, evidence_synthesis_contract, group_approval_contract, sha256_hex, source_groups_contract, source_inventory_contract
+from monokl.export import export_run, validate_export
 from monokl.ledger import RunLock, approve_source_groups, create_evidence_synthesis, create_reasoning_task, create_source_groups, create_source_inventory, resume_run, submit_reasoning_result, validate_run
 from monokl.retrieval import Crawl4AIRetriever, RetrievalBudgets, RetrievalRequest, StdlibRetriever, browser_isolation_policy, check_public_url
 
@@ -583,7 +584,7 @@ class MonoklCliTests(unittest.TestCase):
             self.assertEqual(validate_run(run).state, "synthesized")
             audit = json.loads((run / ".monokl" / "artifacts" / "evidence-audit.json").read_text())
             self.assertEqual(audit["status"], "passed")
-            self.assertEqual(resume_run(run)["reason"], "next approved goal not implemented: export-integration")
+            self.assertEqual(resume_run(run)["next_phase"], "export")
 
     def test_evidence_synthesis_adversarial_inputs_fail_closed(self) -> None:
         cases = {
@@ -609,6 +610,86 @@ class MonoklCliTests(unittest.TestCase):
                 create_evidence_synthesis(run, self._synthesis_payload(run))
             (run / ".monokl" / "artifacts" / "evidence-synthesis.json").write_text('{"schema_version":', encoding="utf-8")
             self.assertFalse(validate_run(run).valid)
+
+    def _synthesized_run(self, root: str) -> Path:
+        run = self._approved_groups_run(root)
+        create_evidence_synthesis(run, self._synthesis_payload(run))
+        return run
+
+    def test_export_bundle_public_end_to_end_deterministic_and_cli_validation(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            run = self._synthesized_run(root)
+            out = Path(root) / "export"
+            result = export_run(run, out)
+            self.assertTrue(result["valid"])
+            self.assertEqual(sorted(p.name for p in out.iterdir()), ["evidence.json", "gaps.json", "mozak-proposal.json", "receipt.json", "report.md"])
+            self.assertEqual(validate_export(out)["artifact_hashes"], result["artifact_hashes"])
+            first_hashes = result["artifact_hashes"]
+            repeat_root = Path(root) / "repeat-root"
+            repeat_root.mkdir()
+            repeat_run = self._synthesized_run(str(repeat_root))
+            repeat = Path(root) / "export-repeat"
+            repeat_hashes = export_run(repeat_run, repeat)["artifact_hashes"]
+            self.assertEqual(first_hashes["evidence.json"], repeat_hashes["evidence.json"])
+            self.assertEqual(first_hashes["gaps.json"], repeat_hashes["gaps.json"])
+            self.assertEqual((out / "report.md").read_text(encoding="utf-8"), (repeat / "report.md").read_text(encoding="utf-8"))
+            self.assertEqual(main(["export-validate", str(out)]), 0)
+            receipt = json.loads((out / "receipt.json").read_text())
+            proposal = json.loads((out / "mozak-proposal.json").read_text())
+            evidence = json.loads((out / "evidence.json").read_text())
+            self.assertFalse(receipt["mozak_acceptance_claimed"])
+            self.assertFalse(proposal["accepted"])
+            self.assertEqual(evidence["authority"], "proposal_only")
+            self.assertIn("Evidence:", (out / "report.md").read_text(encoding="utf-8"))
+            self.assertNotIn("<html>", (out / "evidence.json").read_text(encoding="utf-8"))
+
+    def test_export_failures_refuse_tampering_missing_files_overwrite_symlink_and_boundary_crossing(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            run = self._synthesized_run(root)
+            out = Path(root) / "export"
+            export_run(run, out)
+            with self.assertRaises(FileExistsError):
+                export_run(run, out)
+            (out / "evidence.json").write_text('{"schema_version":1}\n', encoding="utf-8")
+            with self.assertRaises(ValueError):
+                validate_export(out)
+        with tempfile.TemporaryDirectory() as root:
+            run = self._synthesized_run(root)
+            out = Path(root) / "export"
+            export_run(run, out)
+            (out / "gaps.json").unlink()
+            with self.assertRaises(ValueError):
+                validate_export(out)
+        with tempfile.TemporaryDirectory() as root:
+            link = Path(root) / "link"
+            link.symlink_to(Path(root) / "target")
+            with self.assertRaises(FileExistsError):
+                export_run(self._synthesized_run(root), link)
+        with tempfile.TemporaryDirectory() as root:
+            run = self._synthesized_run(root)
+            out = Path(root) / "export"
+            export_run(run, out)
+            proposal = json.loads((out / "mozak-proposal.json").read_text())
+            proposal["accepted"] = True
+            (out / "mozak-proposal.json").write_text(json.dumps(proposal, sort_keys=True) + "\n", encoding="utf-8")
+            receipt = json.loads((out / "receipt.json").read_text())
+            receipt["artifact_hashes"]["mozak-proposal.json"] = sha256_hex((out / "mozak-proposal.json").read_bytes())
+            (out / "receipt.json").write_text(json.dumps(receipt, sort_keys=True) + "\n", encoding="utf-8")
+            with self.assertRaises(ValueError):
+                validate_export(out)
+
+    def test_export_refuses_unsynthesized_and_unresolved_citations(self) -> None:
+        with tempfile.TemporaryDirectory() as root:
+            run = self._approved_groups_run(root)
+            with self.assertRaises(ValueError):
+                export_run(run, Path(root) / "export")
+        with tempfile.TemporaryDirectory() as root:
+            run = self._approved_groups_run(root)
+            payload = self._synthesis_payload(run)
+            payload["claims"][0]["locators"] = []
+            payload["synthesis_sha256"] = canonical_sha256({k: v for k, v in payload.items() if k != "synthesis_sha256"})
+            with self.assertRaises(ValueError):
+                create_evidence_synthesis(run, payload)
 
     def test_crawl4ai_fake_boundary_records_limits_and_identity(self) -> None:
         body = "# ok"

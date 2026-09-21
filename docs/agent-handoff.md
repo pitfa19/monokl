@@ -30,11 +30,20 @@ monokl plan ./runs/example "What evidence answers this question?" \
   --include "public primary sources" --exclude "uncited opinion" --max-sources 30
 monokl retrieve ./runs/example https://example.com \
   --allowed-host example.com --crawl4ai
+monokl reasoning-task ./runs/example
+# Run any provider or human against .monokl/artifacts/reasoning-task.json, then save result.json.
+monokl reasoning-result ./runs/example ./result.json
+monokl source-inventory ./runs/example
+monokl source-groups ./runs/example ./groups.json
+monokl source-group-approval ./runs/example ./approval.json
+monokl evidence-synthesis ./runs/example ./synthesis.json
+monokl export ./runs/example ./exports/example
+monokl export-validate ./exports/example
 monokl validate ./runs/example
 monokl resume ./runs/example
 ```
 
-Every run is create-only. Retrieved content is untrusted. `validate` checks the append-only ledger and pinned artifact hashes. `resume` reports the next supported phase or an explicit block.
+Every run and export is create-only. Retrieved content is untrusted. `validate` checks the append-only ledger and pinned artifact hashes. `export-validate` checks `report.md`, `evidence.json`, `gaps.json`, `receipt.json`, and `mozak-proposal.json` hashes and proposal-only boundaries. `resume` reports the next supported phase or an explicit block.
 
 ## 4. Domain pilot boundary
 
@@ -42,4 +51,4 @@ For a JEPA-RNA or other research pilot, replace the question, URL, and allowlist
 
 ## 5. Return evidence
 
-Report the exact commands, run directory, validation JSON, retrieval status, content hash, gaps, and limitations. Do not claim that MOZAK accepted, promoted, or trusted the retrieved source. MOZAK tracks the project plan. Monokl tracks the untrusted research run.
+Report the exact commands, run directory, validation JSON, export validation JSON, retrieval status, source hashes, bundle hashes, gaps, contradictions, unsupported claims, and limitations. Do not claim that MOZAK accepted, promoted, or trusted the retrieved source or exported proposal. MOZAK tracks the project plan. Monokl tracks the untrusted research run.
