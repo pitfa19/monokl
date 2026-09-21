@@ -23,7 +23,7 @@ Publish Monokl v0.2.0 and leave a verified local Jcode installation ready for ow
 2. Fresh installation completes from public assets.
 3. `monokl --version` reports `0.2.0`.
 4. A fresh Jcode session discovers `/monokl`.
-5. A bounded installed acceptance workflow reaches the expected report output.
+5. A bounded installed Jcode startup check discovers `/monokl` and reports its startup requirements without beginning a research run. The owner will perform the first full run separately.
 6. Existing `v0.1.0` and archive refs remain available.
 
 ## Stop conditions

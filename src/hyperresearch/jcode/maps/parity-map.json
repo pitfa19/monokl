@@ -2,6 +2,11 @@
   "schema_version": 1,
   "product": "monokl",
   "methodology_source": "src/hyperresearch/skills",
+  "upstream_skill_count": 19,
+  "entry_skill": {
+    "upstream_skill": "hyperresearch",
+    "jcode_skill": "monokl"
+  },
   "compatibility_commands": [
     "monokl",
     "hpr",

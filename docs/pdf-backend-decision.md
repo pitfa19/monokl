@@ -1,6 +1,6 @@
 # PDF backend decision
 
-Date: 2026-09-22
+Date: 2026-09-21
 Baseline commit: `df300e77535f73f151af9b2e6d8021bf6dd4fea7` (`df300e7`, `Import pinned HyperResearch 0.11.1 core`)
 Packet: `docs/implementation-packets/03-pdf-backend.md`
 
@@ -78,7 +78,7 @@ Primary local evidence:
 - `src/hyperresearch/web/pdf.py:51-83` imports PyMuPDF and emits a failure reason when missing.
 - `src/hyperresearch/web/pdf.py:141-223` implements extraction through PyMuPDF.
 - `src/hyperresearch/web/pdf.py:226-299` implements PDF download, error reporting, and fallbacks.
-- `tests/test_web_pdf.py` exercises the PDF lane, arXiv URL conversion, raw PDF preservation, SSRF/TLS refusal behavior, image-only/no-text failures, malformed/small/non-PDF failures, and provider fallback behavior.
+- `tests/test_web/test_builtin_pdf_lane.py` and `tests/test_web/test_pdf_diagnostics.py` exercise the PDF lane, arXiv URL conversion, raw PDF preservation, SSRF/TLS refusal behavior, image-only/no-text failures, malformed/small/non-PDF failures, and provider fallback behavior.
 - `docs/third-party-license-inventory.md` records the dependency/license inventory used by this decision.
 
 External license references to verify at release time:
