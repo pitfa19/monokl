@@ -31,9 +31,9 @@ Build a Jcode-native research extension derived from HyperResearch that preserve
 - PyMuPDF is replaced only if a permissively licensed backend demonstrates equivalent or better compatibility on representative fixtures.
 - MOZAK remains the system of record for the accepted plan, project state, and release evidence.
 
-## Open questions resolved during implementation
+## Open questions
 
-- The PDF backend is selected through a recorded compatibility and licensing decision.
-- The exact Jcode role and stage mapping is captured in a machine-readable parity inventory.
-- The installer owns only receipt-pinned CLI and skill bytes and refuses drift or path hazards.
-- Release occurs only after upstream tests, offline fixtures, installed Jcode discovery, and bounded startup checks pass.
+- Confirm the PDF backend through a recorded compatibility and licensing decision.
+- Confirm the exact Jcode role and stage mapping through a machine-readable parity inventory.
+- Confirm installer ownership and drift handling through isolated-home acceptance tests.
+- Confirm release readiness through upstream tests, offline fixtures, installed Jcode discovery, and bounded startup checks.
