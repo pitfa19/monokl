@@ -16,6 +16,12 @@ Monokl v0.2 is derived from [HyperResearch](https://github.com/jordan-gibbs/hype
 
 Every path present in the pinned upstream tree was imported at the same path and byte content before Monokl-specific commits. Monokl-specific changes are reviewable as commits after the import commit. The preservation branch `archive/pre-hpr-rewrite` and annotated tag `pre-hpr-rewrite-2026-09-21` retain the earlier implementation.
 
+The code-level delta from this pinned revision is catalogued in `docs/code-delta-from-hyperresearch.md`. Reproduce the inventory with:
+
+```bash
+git diff --name-status 75b1ecfb2891184fad2cc1a2ddf9abe476f5b54c..HEAD
+```
+
 ## Product delta policy
 
 Monokl changes only host integration, packaging, naming, installation, and documented licensing boundaries required for Jcode. Retrieval, vault, search, citation, contradiction, report, resume, and the 16-stage research methodology remain inherited from the pinned upstream implementation.

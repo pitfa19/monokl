@@ -6,17 +6,19 @@
 
 ---
 
-**Monokl** is a Jcode-only research extension derived from HyperResearch. It preserves the engine, persistent vault, evidence discipline, critique gates, citation auditing, resumability, and complete research method while translating host orchestration into Jcode `swarm`, `skill`, and `todo` operations.
+**Monokl is a fork of [HyperResearch](https://github.com/jordan-gibbs/hyperresearch) made specifically for Jcode.** It preserves the upstream engine, persistent vault, evidence discipline, critique gates, citation auditing, resumability, and complete research method while translating host orchestration into Jcode `swarm`, `skill`, and `todo` operations.
 
 ## Install
 
+From GitHub `main`, including the Jcode skills for the current project:
+
 ```bash
-pip install monokl-0.2.0-py3-none-any.whl
-monokl jcode install --project .
-monokl jcode doctor --project . --json
+uv tool install --force 'git+https://github.com/pitfa19/monokl.git@main' && monokl jcode install --project . && monokl jcode doctor --project . --json
 ```
 
 Then load `/monokl` in Jcode.
+
+For a reproducible release install, use the wheel and `SHA256SUMS` from the latest [GitHub release](https://github.com/pitfa19/monokl/releases).
 
 Compatibility command aliases remain available where useful:
 
@@ -27,6 +29,19 @@ hyperresearch --version
 ```
 
 Python 3.11 to 3.13 is supported.
+
+## Models
+
+Monokl does not hardcode Claude, OpenAI, or any other provider. By default every worker inherits the model route of the Jcode coordinator that loaded `/monokl`.
+
+Override the default or individual stages with `MONOKL_MODEL_ROUTES_JSON`:
+
+```bash
+export MONOKL_MODEL_ROUTES_JSON='{"default":"gpt-5.5","2":"gpt-5.5","12":"claude-opus-5"}'
+monokl jcode routes --json
+```
+
+Valid stage keys are `1`, `1.5`, `2` through `14`, `14.5`, `15`, and `16`. Monokl validates the route-map shape; Jcode resolves whether each named model is available. Model selection changes provenance only. It does not change stage order, review authority, or acceptance gates. The `/monokl` skill tells Jcode to pass the selected route to each `swarm` worker and record the actual provider and model in the run artifacts.
 
 ## What ships
 
@@ -72,4 +87,4 @@ Monokl keeps the HyperResearch methodology intact. The Jcode layer changes orche
 
 ## Upstream
 
-Monokl is derived from HyperResearch under the MIT license. See `UPSTREAM.md`, `LICENSE`, and `src/hyperresearch/licenses/`.
+Monokl is derived from HyperResearch under the MIT license. See `UPSTREAM.md`, `docs/code-delta-from-hyperresearch.md`, `LICENSE`, and `src/hyperresearch/licenses/`.
