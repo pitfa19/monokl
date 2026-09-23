@@ -1,0 +1,334 @@
+{
+  "schema_version": 1,
+  "run_tag": "http-retry-parity-800309",
+  "executed_at": "2026-09-23",
+  "installed_cli": "monokl v0.2.0",
+  "source_revision": "19fd2e4c2fc4629404244344503dba241344d5e3",
+  "upstream_baseline": "d329565d3fa0a74c8b5a80daa6c5e32e33c39799",
+  "query": "What retry behavior should an HTTP client use for 429 Too Many Requests versus 503 Service Unavailable, based on current standards?",
+  "public_sources": [
+    "https://www.rfc-editor.org/rfc/rfc6585.html#section-4",
+    "https://www.rfc-editor.org/rfc/rfc9110.html#section-15.6.4",
+    "https://www.rfc-editor.org/rfc/rfc9110.html#section-10.2.3"
+  ],
+  "profile": "full",
+  "completed_steps": [
+    "1",
+    "2",
+    "3",
+    "4",
+    "5",
+    "6",
+    "7",
+    "8",
+    "9",
+    "10",
+    "11",
+    "12",
+    "13",
+    "14",
+    "14.5",
+    "15",
+    "16"
+  ],
+  "run_status": "done",
+  "verify": {
+    "passed": true,
+    "at": "2026-09-23T03:39:59.474823+00:00",
+    "failed_checks": []
+  },
+  "spend": {
+    "estimated_usd": 0.0,
+    "sources_fetched": 3,
+    "notes_written": 3,
+    "agents_spawned": 4
+  },
+  "lint": {
+    "errors": 0,
+    "warnings": 7,
+    "info": 4,
+    "warnings_accepted_for_bounded_fixture": true
+  },
+  "files": [
+    {
+      "path": "research/notes/final_report_http-retry-parity-800309.md",
+      "sha256": "950b2dd2272a3e2522d1f77de1cdefd3ef85db1d8e35e0032fdea885e661316b",
+      "bytes": 5578
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/artifact-manifest.json",
+      "sha256": "8d6c6979c75b357c1cccb8e842af04edb5088df0944598e3d08b8c2059c21094",
+      "bytes": 3234
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/cite-check-findings.json",
+      "sha256": "8aa973100a15bf817985395637131e838cf84e427be4792583def923f020f5fa",
+      "bytes": 21
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/comparisons.md",
+      "sha256": "e62f52e007898d55aaf449b205592590fae3603c5c7f1bf116e24419dd2f460a",
+      "bytes": 2760
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/contradiction-graph.json",
+      "sha256": "f10b964828cffe5df1751fb06e2b26c7f03bf550740c04be7274e76f81714ac1",
+      "bytes": 746
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/corpus-critic-gaps.json",
+      "sha256": "8321ca514862d43ccd54cd504f1c7e4f0659905f79220bb28abc843aa29ec668",
+      "bytes": 1874
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/corpus-critic.json",
+      "sha256": "5d2cbe88e0b0ee57c2620b22dba3f144a2a42e71ecdb985a44ba1f39834f44fe",
+      "bytes": 572
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/critic-findings-depth.json",
+      "sha256": "8a703687f309222192fbdbc75839a77d1b57c87e511c11d6b9e84a9b0e0a8573",
+      "bytes": 382
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/critic-findings-dialectic.json",
+      "sha256": "d2997c1921f6b4ae1915c7b0b951914ea21b6ec9640ff237fab41cf953e5ab38",
+      "bytes": 343
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/critic-findings-instruction.json",
+      "sha256": "a944d02d64e2bc5ac9bd97faeff94f54c40867d712d51650e2a282804f58665b",
+      "bytes": 295
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/critic-findings-width.json",
+      "sha256": "484fad0478ca369ddbaa2c4e0c978193ff6ca3586f4a65e1f21cb11f93103efc",
+      "bytes": 357
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/depth-findings.json",
+      "sha256": "2e14013f3ed86d608eaaf84b19eb19233b3dc9d7323a8100b2a963a218a92cf0",
+      "bytes": 2223
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/events.jsonl",
+      "sha256": "435bf36fb1852077dfd43035d82152ef35dd3611992d6969b3e1635c26eea375",
+      "bytes": 3214
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/evidence-digest.json",
+      "sha256": "b457988d88842e1c1af9098f91bc5e411cb1b25581a6796c80161326fa842099",
+      "bytes": 1199
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/gap-fetch-log.json",
+      "sha256": "b2a924c3ea8259222373543ce51493081fb5dc16a5071854aa5a4584ccb8df2b",
+      "bytes": 191
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/interim-fallback-policy-when-retry-after-is-absent.md",
+      "sha256": "f44c35a1d12d6a89c5e045e3a9654563eeb20c0521b78d153b09d046cfad9eae",
+      "bytes": 1045
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/interim-retry-after-precedence-and-parsing.md",
+      "sha256": "2022f8bab3e65b8efbc1941114dcced0e05a08b6e1b201078990f4ed2111acb3",
+      "bytes": 1023
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/interim-status-specific-retry-intent.md",
+      "sha256": "d059400c7cc48042b0a8377c470af99103aaa16292d9a8a325d71cb6cffe11d6",
+      "bytes": 1095
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/loci-a.json",
+      "sha256": "7d687f3d2fda3cc6adb769ffaaa5b015d9765e34f1fd0f5b5adbb40065b1a61d",
+      "bytes": 1908
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/loci-b.json",
+      "sha256": "2b865c12491606cfc2958b4402f25d1e6a73c12ad890391d020c214d31b9bf8b",
+      "bytes": 1982
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/loci.json",
+      "sha256": "8b37d7feb24203e82b770301c1c1ccb83090db11e69a45af4188fc7160912c65",
+      "bytes": 2670
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/patch-log.json",
+      "sha256": "3fa74eaa19276e7b570ea8335bba61f094f5e1cac64bac9db071b043202db68a",
+      "bytes": 152
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/polish-log.json",
+      "sha256": "b51c621a5d9beba12f68b9871ade838fcf95d0e6d727cbda727ed2a6d3786312",
+      "bytes": 204
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/prompt-decomposition.json",
+      "sha256": "a90e6708be4283355ed13be6dbaf6da3f3415235d278bc7f501b55ea2d922cf7",
+      "bytes": 2659
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/query.md",
+      "sha256": "1c5a944c987d2f0d108e5b8a1cb7d9dac3a5ee7e98f7f0368f8e787b4e641469",
+      "bytes": 132
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/readability-findings.json",
+      "sha256": "c5d86baca90e28adcd89ebd1f52ce5730b2ff37075f8f3b5771a6bcb5bfdf558",
+      "bytes": 232
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/run.json",
+      "sha256": "57e13509106decde2e707a46cefa5cddb631c8d868e54b9b3d517a794aba33c7",
+      "bytes": 2373
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/source-inventory.json",
+      "sha256": "2f62f736888548b1a721b0b3788c698e98f8a6315a05101f2f765ce9c2663a29",
+      "bytes": 717
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/source-tensions.json",
+      "sha256": "360da045eb0495fbea76e48c26c8cf7d402d7cfc3ffdbf70eefcce79a7442994",
+      "bytes": 574
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/temp/claims-rfc-6585-429.json",
+      "sha256": "5d5d05439a7095355e9349c4a5cf18244243f32001e87fc693a3e9c1a32ec853",
+      "bytes": 3277
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/temp/claims-rfc-9110-503.json",
+      "sha256": "bf4646c477a4d61e7efab98f885909a3e52202b60bad6ef170d5906bad3e3d3b",
+      "bytes": 2706
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/temp/claims-rfc-9110-retry-after.json",
+      "sha256": "87305ffb0a9f23df48b77b92edbe2edbfcb8288952ceb0bd76b21802e792a9dd",
+      "bytes": 3955
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/temp/consensus-claims.json",
+      "sha256": "1450246bdc2ff5c49e874938fcdff0cc1e74833cafc03044823720eb9cca09c3",
+      "bytes": 1266
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/temp/contradiction-graph.json",
+      "sha256": "df51439763ce2a7ddd2688268b6abbdae3209360569ea23c03eaaabf8c36e814",
+      "bytes": 3530
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/temp/corpus-critic-gaps-raw.json",
+      "sha256": "8321ca514862d43ccd54cd504f1c7e4f0659905f79220bb28abc843aa29ec668",
+      "bytes": 1874
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/temp/coverage-gaps.md",
+      "sha256": "e896d50407b724b636c137697ae0cbdf9d967d4108e4b54a4f15802c3152ea15",
+      "bytes": 297
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/temp/coverage-matrix.md",
+      "sha256": "6fa2a8f7c4970b87ec0ab6ffb40d265a44eb5b1c006ace468d0f431616c798d1",
+      "bytes": 1716
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/temp/draft-a-source-list.md",
+      "sha256": "c1d2de8c038110ef63093ccb920e763614313ee82ad5988685f3b4d3812a31a8",
+      "bytes": 298
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/temp/draft-a.md",
+      "sha256": "3c65ac248388e9abf3203797c0c6ea7e97d6c0bb4af4e5af93f9f790b17a365e",
+      "bytes": 1565
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/temp/draft-angles.md",
+      "sha256": "691aa290e11ff592968372318f6436d365f3045e83fd9ffd2203c949e0e22fc2",
+      "bytes": 493
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/temp/draft-b-source-list.md",
+      "sha256": "9a280e3b44b7e00328376e0b122b98b95841c6eca540eb30d2f01ab5b4f8c15d",
+      "bytes": 298
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/temp/draft-b.md",
+      "sha256": "c736c67ada6020b4115ea43c75cb1d37958fa83573bcad3a6f224cb03ea3ae14",
+      "bytes": 318
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/temp/draft-c-source-list.md",
+      "sha256": "af3c5f13985cf7ba3373ddc41782fade955e2e910cc111286a927388206525cd",
+      "bytes": 298
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/temp/draft-c.md",
+      "sha256": "35e4cf91d8ac2aa384cb37ac471ef54f3100105bb0e94352baf38413a5d7a2ba",
+      "bytes": 330
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/temp/evidence-digest.md",
+      "sha256": "1aa589cb83640f47606fefe0b16ea783541b7f09fe4240a6037599b1717e9b61",
+      "bytes": 3631
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/temp/jcode-model-routes.json",
+      "sha256": "19a69ea9787536dfbdc8a0218761b6b5effbddc4b09ecd69358ec80a3e3d1020",
+      "bytes": 165
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/temp/period-pinned-gaps.json",
+      "sha256": "87be9a3487eb0a8384b6ae7c2b4d502528972751c2fd7d995a9f4adea02bc830",
+      "bytes": 984
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/temp/search-plan.md",
+      "sha256": "4924c4d217a27a4409c619796926654a5e00ec557bc6a66a0546938a2ab83ae7",
+      "bytes": 1485
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/temp/source-tensions.json",
+      "sha256": "d1d299c47735502dcd02a684a319fc0669c13cd4d106793fbda024a3e7cb649d",
+      "bytes": 3362
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/temp/stage-10-11-provenance.json",
+      "sha256": "a199d553f16b1f7d44d0da1ca33f87e96037db15405c189458b1d90880cb5bbc",
+      "bytes": 378
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/temp/synthesis-conflicts.md",
+      "sha256": "ee14c9bc0be229f0cbedc75de3a8acb6aab789904974fcf50c328eef96056dfd",
+      "bytes": 127
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/temp/synthesis-outline.md",
+      "sha256": "3fd7f82d15632181c2602a48396d472ac17696faff5fd48f5dd5171818a60539",
+      "bytes": 438
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/temp/synthesis-pass1.md",
+      "sha256": "14b2b7f6bf98e5f1b6e9adc94b475661103e5ca29fe73d4f27145edaee1be5f9",
+      "bytes": 5062
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/temp/synthesis-plan.md",
+      "sha256": "a9ee7f5739024512a135669469e0a88a6d30c001d287b393f1cc51e08d374c08",
+      "bytes": 534
+    },
+    {
+      "path": "research/runs/http-retry-parity-800309/temp/width-sweep-local-sources.json",
+      "sha256": "3ebe539324951361d5ad06b1542886bb22962bc020c3e189402cc265c656f8ff",
+      "bytes": 1760
+    }
+  ],
+  "limitations": [
+    "Three-source standards fixture, not a broad 55-80 source production run.",
+    "No JEPA-RNA or domain-specific pilot.",
+    "Lint warnings retained where non-blocking and documented; zero lint errors."
+  ]
+}

@@ -2,7 +2,12 @@
 
 ## [Unreleased]
 
+## [0.2.1] - 2026-09-23
+
 - Advanced the pinned HyperResearch baseline from `75b1ecfb2891184fad2cc1a2ddf9abe476f5b54c` to `d329565d3fa0a74c8b5a80daa6c5e32e33c39799`, preserving Monokl's Jcode-specific product delta.
+- Integrated upstream HTTP safety, note handling, hook, citation, and workflow fixes with their regression tests.
+- Regenerated all 18 project-local Jcode stage skills from the updated methodology source.
+- Completed an installed full-pipeline public-source parity workflow with separate critic, citation, polish, and readability gates; evidence is under `docs/parity/`.
 
 ## [0.2.0] - 2026-09-21
 

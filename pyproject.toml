@@ -4,7 +4,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "monokl"
-version = "0.2.0"
+version = "0.2.1"
 description = "Jcode-native research extension derived from HyperResearch with disciplined provenance, critique gates, citation auditing, and resumability."
 readme = "README.md"
 license = "MIT"
