@@ -1,6 +1,6 @@
-# Hyperresearch 2.0 Roadmap
+# Monokl 2.0 Roadmap
 
-This directory holds the engineering specs for the 2.0 program: six phases that take hyperresearch from a ~80-source, ~10K-word single-report harness to a dissertation-scale research system with persistent source ranking, mechanical verification, and a browser lane for hard-to-reach sources.
+This directory holds inherited engineering specs for the 2.0 program: six phases that took HyperResearch from a ~80-source, ~10K-word single-report harness to a dissertation-scale research system with persistent source ranking, mechanical verification, and a browser lane for hard-to-reach sources. Monokl preserves this history because the current Jcode fork inherits the method and engine rather than rewriting them.
 
 ## The 2.0 thesis
 
@@ -9,7 +9,7 @@ This directory holds the engineering specs for the 2.0 program: six phases that 
 1. **Quality judgment is ephemeral.** The 6-dimension utility score is used once to pick fetch targets, then discarded. Citations are numbered by first appearance. Nothing in the Python layer can answer "which sources are most load-bearing?" — the `sources` table is a dedup ledger with no score, tier, or rank column.
 2. **Scale is prose-hardcoded.** Source gates (min 45 / target 55–80), loci cap (6), depth budget (40), draft count (3), must-read bounds (20–50), word ceiling (10K) all live as literals inside skill and agent prompt text. Scaling up currently means rewriting 17 skills and 14 agent prompts.
 
-2.0 fixes both: quality judgment becomes **persistent and programmatic** (ranking, claims, verification), and scale becomes a **profile** instead of a rewrite.
+2.0 fixed both upstream: quality judgment became **persistent and programmatic** (ranking, claims, verification), and scale became a **profile** instead of a rewrite. In Monokl, these docs remain technical history and a map of inherited capabilities.
 
 ## Phases
 
@@ -49,9 +49,9 @@ Phase 2        Phase 4        Phase 3*
 - [x] Phase 4 — chrome lane (2026-07-19; session handoff deliberately dropped — see phase doc/CHANGELOG)
 - [x] Phase 5 — verification (2026-07-19; bench CI workflow replaced by shipped `hpr run verify` — bench/ is gitignored)
 
-## What 1.x already has (do not rebuild)
+## What the inherited 1.x system already has (do not rebuild)
 
-Contributors should not re-implement any of the following — they exist and work:
+Contributors should not re-implement any of the following in Monokl without a documented reason. They exist in the inherited engine and work:
 
 - **Multi-lens sourcing**: 4 search lenses (breadth / academic citation-chain / adversarial ≥5 searches / period-pinned primary filings), academic-APIs-before-web, Wikipedia-as-source-hub-never-cited, mandatory fetcher citation-chasing (3–8 primaries per batch) with `--suggested-by` provenance chains.
 - **Fetch-time quality gates**: pre-fetch 6-dim utility scoring, login-wall/junk/binary detection (`web/base.py`), redundancy audit tagging `derivative-of` sources.

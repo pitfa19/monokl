@@ -1,0 +1,170 @@
+{
+  "contract_version": 1,
+  "id": "inputs-monokl-v11",
+  "accepted_at": "2026-09-23T06:14:04Z",
+  "inputs": [
+    {
+      "id": "input-agent-agnostic",
+      "text": "Monokl must be a standalone agent-agnostic tool; optional skills may teach agents to operate it, but no specific model, agent SDK, or coding-agent runtime may be required by the core.",
+      "provenance": {
+        "kind": "human_decision",
+        "decision_id": "decision-monokl-tool-boundary",
+        "actor": "pitfa"
+      }
+    },
+    {
+      "id": "input-bounded-crawl4ai",
+      "text": "Crawl4AI is a bounded retrieval dependency only; Monokl owns provenance, caching identity, budgets, workflow state, evidence, and approvals.",
+      "provenance": {
+        "kind": "human_decision",
+        "decision_id": "decision-monokl-crawl4ai-boundary",
+        "actor": "pitfa"
+      }
+    },
+    {
+      "id": "input-small-hpr-lifecycle",
+      "text": "Monokl should retain the useful HyperResearch lifecycle while remaining materially smaller: scope, retrieve, group, reason, audit, report, receipt, and resume.",
+      "provenance": {
+        "kind": "human_decision",
+        "decision_id": "decision-monokl-product-scope",
+        "actor": "pitfa"
+      }
+    },
+    {
+      "id": "input-approval-boundary",
+      "text": "Retrieved content is untrusted, outputs remain proposal-only, and owner approval is required before promotion or action.",
+      "provenance": {
+        "kind": "human_decision",
+        "decision_id": "decision-monokl-approval-boundary",
+        "actor": "pitfa"
+      }
+    },
+    {
+      "id": "input-current-scaffold",
+      "text": "The current repository implements only create-only init, plan, and status commands plus scope and budget contracts; retrieval and reasoning workflows are not implemented.",
+      "provenance": {
+        "kind": "codebase_observation",
+        "observation_id": "observation-monokl-scaffold",
+        "repository_revision": "2ef3a1102dd18074f9d9d414e0e41feba9a2a720",
+        "paths": [
+          "src/monokl/cli.py",
+          "src/monokl/contracts.py",
+          "tests/test_cli.py"
+        ]
+      }
+    },
+    {
+      "id": "input-security-contract",
+      "text": "The documented first-release security contract refuses private and unsafe URL schemes, disables retrieval-layer LLM extraction, uses create-only artifacts, and excludes credentials, persistent browser profiles, proxies, and downloads.",
+      "provenance": {
+        "kind": "codebase_observation",
+        "observation_id": "observation-monokl-security",
+        "repository_revision": "2ef3a1102dd18074f9d9d414e0e41feba9a2a720",
+        "paths": [
+          "docs/security.md",
+          "docs/architecture.md",
+          "README.md"
+        ]
+      }
+    },
+    {
+      "id": "input-private-development",
+      "text": "The Monokl repository remains private during initial development.",
+      "provenance": {
+        "kind": "human_decision",
+        "decision_id": "decision-monokl-private-development",
+        "actor": "pitfa"
+      }
+    },
+    {
+      "id": "input-jcode-only",
+      "text": "Monokl is exclusively a Jcode extension. Claude Code, Codex, Cursor, and other host integrations are out of scope for this release.",
+      "provenance": {
+        "kind": "human_decision",
+        "decision_id": "decision-monokl-jcode-only",
+        "actor": "pitfa"
+      }
+    },
+    {
+      "id": "input-hpr-derived",
+      "text": "Monokl must derive from HyperResearch upstream commit d329565d3fa0a74c8b5a80daa6c5e32e33c39799 and preserve its research engine and 16-stage methodology rather than reimplementing them.",
+      "provenance": {
+        "kind": "human_decision",
+        "decision_id": "decision-monokl-latest-hpr-baseline",
+        "actor": "pitfa"
+      }
+    },
+    {
+      "id": "input-thin-jcode-delta",
+      "text": "Changes from HyperResearch should be limited to branding, packaging, Jcode skill installation, Jcode swarm orchestration, model routing, and fixes required for demonstrated Jcode parity.",
+      "provenance": {
+        "kind": "human_decision",
+        "decision_id": "decision-monokl-thin-delta",
+        "actor": "pitfa"
+      }
+    },
+    {
+      "id": "input-preserve-current",
+      "text": "The current Monokl implementation and v0.1.0 release must remain recoverable through immutable Git history, a preservation tag, and an archive branch before main is replaced.",
+      "provenance": {
+        "kind": "human_decision",
+        "decision_id": "decision-monokl-preserve-v01",
+        "actor": "pitfa"
+      }
+    },
+    {
+      "id": "input-methodology-parity",
+      "text": "Jcode Monokl must preserve HyperResearch pipeline semantics, expected vault artifacts, source and citation handling, contradiction analysis, adversarial review, report generation, and resume behavior.",
+      "provenance": {
+        "kind": "human_decision",
+        "decision_id": "decision-monokl-hpr-parity",
+        "actor": "pitfa"
+      }
+    },
+    {
+      "id": "input-license-boundary",
+      "text": "The fork must preserve HyperResearch's MIT copyright and license, state derivation without implying endorsement, and publish a third-party license inventory.",
+      "provenance": {
+        "kind": "human_decision",
+        "decision_id": "decision-monokl-license-boundary",
+        "actor": "pitfa"
+      }
+    },
+    {
+      "id": "input-pdf-decision",
+      "text": "Replace PyMuPDF only if a permissively licensed alternative demonstrates the required HPR PDF capabilities and passes representative parity fixtures without a material quality or reliability regression; otherwise retain PyMuPDF and disclose its AGPL-3.0 or commercial licensing requirement.",
+      "provenance": {
+        "kind": "human_decision",
+        "decision_id": "decision-monokl-pdf-backend",
+        "actor": "pitfa"
+      }
+    },
+    {
+      "id": "input-no-domain-pilot",
+      "text": "The JEPA-RNA pilot and other domain research runs are excluded. Release acceptance uses bounded generic fixtures only.",
+      "provenance": {
+        "kind": "human_decision",
+        "decision_id": "decision-monokl-no-jepa-pilot",
+        "actor": "pitfa"
+      }
+    },
+    {
+      "id": "input-release-target",
+      "text": "The completed fork is released as Monokl v0.2.0, installed locally, and verified from a fresh Jcode session before handoff to the owner.",
+      "provenance": {
+        "kind": "human_decision",
+        "decision_id": "decision-monokl-v020",
+        "actor": "pitfa"
+      }
+    },
+    {
+      "id": "input-docs-brand-refresh",
+      "text": "The owner approved making the Monokl repository documentation and README more compelling and generating a new image in the established dark pixel-art peach-to-magenta-to-purple visual style.",
+      "provenance": {
+        "kind": "human_decision",
+        "decision_id": "decision-monokl-docs-brand-refresh-2026-09-23",
+        "actor": "pitfa"
+      }
+    }
+  ]
+}
