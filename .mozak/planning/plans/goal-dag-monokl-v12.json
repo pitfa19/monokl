@@ -1,0 +1,294 @@
+{
+  "contract_version": 1,
+  "id": "plan-monokl-development",
+  "version": 12,
+  "input_set_id": "inputs-monokl-v12",
+  "goals": [
+    {
+      "id": "goal-preserve-current",
+      "version": 1,
+      "title": "Preserve current Monokl and establish an upstream baseline",
+      "status": "completed",
+      "priority": 1,
+      "input_ids": [
+        "input-preserve-current",
+        "input-hpr-derived",
+        "input-license-boundary"
+      ],
+      "recovery_attempts": 0
+    },
+    {
+      "id": "goal-import-hpr",
+      "version": 1,
+      "title": "Import the pinned HyperResearch core with attribution and parity baseline",
+      "status": "completed",
+      "priority": 2,
+      "input_ids": [
+        "input-hpr-derived",
+        "input-thin-jcode-delta",
+        "input-methodology-parity",
+        "input-license-boundary"
+      ],
+      "recovery_attempts": 0
+    },
+    {
+      "id": "goal-pdf-backend",
+      "version": 1,
+      "title": "Evaluate and record the PDF backend licensing decision",
+      "status": "completed",
+      "priority": 3,
+      "input_ids": [
+        "input-pdf-decision",
+        "input-license-boundary",
+        "input-methodology-parity"
+      ],
+      "recovery_attempts": 0
+    },
+    {
+      "id": "goal-jcode-skills",
+      "version": 1,
+      "title": "Package the HyperResearch workflow as native Jcode skills",
+      "status": "completed",
+      "priority": 4,
+      "input_ids": [
+        "input-jcode-only",
+        "input-thin-jcode-delta",
+        "input-methodology-parity"
+      ],
+      "recovery_attempts": 0
+    },
+    {
+      "id": "goal-jcode-orchestration",
+      "version": 1,
+      "title": "Translate HyperResearch subagents into Jcode swarm orchestration",
+      "status": "completed",
+      "priority": 5,
+      "input_ids": [
+        "input-jcode-only",
+        "input-thin-jcode-delta",
+        "input-methodology-parity"
+      ],
+      "recovery_attempts": 0
+    },
+    {
+      "id": "goal-install-package",
+      "version": 1,
+      "title": "Build the Jcode extension installer and distributable package",
+      "status": "completed",
+      "priority": 6,
+      "input_ids": [
+        "input-jcode-only",
+        "input-license-boundary",
+        "input-release-target"
+      ],
+      "recovery_attempts": 0
+    },
+    {
+      "id": "goal-parity-validation",
+      "version": 1,
+      "title": "Demonstrate upstream and Jcode workflow parity on bounded fixtures",
+      "status": "completed",
+      "priority": 7,
+      "input_ids": [
+        "input-methodology-parity",
+        "input-no-domain-pilot",
+        "input-thin-jcode-delta"
+      ],
+      "recovery_attempts": 0
+    },
+    {
+      "id": "goal-release-v020",
+      "version": 1,
+      "title": "Publish and locally install the latest Monokl release",
+      "status": "ready",
+      "priority": 8,
+      "input_ids": [
+        "input-release-target",
+        "input-license-boundary",
+        "input-no-domain-pilot"
+      ],
+      "recovery_attempts": 0
+    },
+    {
+      "id": "goal-docs-brand-refresh",
+      "version": 1,
+      "title": "Polish Monokl documentation and add a same-style research illustration",
+      "status": "completed",
+      "priority": 9,
+      "input_ids": [
+        "input-docs-brand-refresh",
+        "input-jcode-only",
+        "input-thin-jcode-delta"
+      ],
+      "recovery_attempts": 0
+    },
+    {
+      "id": "goal-benchmark-monokl-pilot",
+      "version": 1,
+      "title": "Publish the nine-query DeepResearch-Bench Monokl pilot",
+      "status": "ready",
+      "priority": 10,
+      "input_ids": [
+        "input-benchmark-monokl-pilot",
+        "input-methodology-parity"
+      ],
+      "recovery_attempts": 0
+    },
+    {
+      "id": "goal-benchmark-paired-hpr",
+      "version": 1,
+      "title": "Publish the paired Monokl and HyperResearch pilot comparison",
+      "status": "planned",
+      "priority": 11,
+      "input_ids": [
+        "input-benchmark-monokl-pilot",
+        "input-benchmark-paired-hpr",
+        "input-hpr-derived"
+      ],
+      "recovery_attempts": 0
+    },
+    {
+      "id": "goal-benchmark-monokl-full",
+      "version": 1,
+      "title": "Publish the full DeepResearch-Bench Monokl evaluation",
+      "status": "planned",
+      "priority": 12,
+      "input_ids": [
+        "input-benchmark-monokl-pilot",
+        "input-benchmark-paired-hpr",
+        "input-benchmark-monokl-full"
+      ],
+      "recovery_attempts": 0
+    }
+  ],
+  "dependencies": [
+    {
+      "goal_id": "goal-import-hpr",
+      "depends_on_goal_id": "goal-preserve-current",
+      "provenance": {
+        "kind": "declared",
+        "input_ids": [
+          "input-preserve-current",
+          "input-hpr-derived"
+        ]
+      }
+    },
+    {
+      "goal_id": "goal-pdf-backend",
+      "depends_on_goal_id": "goal-import-hpr",
+      "provenance": {
+        "kind": "declared",
+        "input_ids": [
+          "input-pdf-decision",
+          "input-methodology-parity"
+        ]
+      }
+    },
+    {
+      "goal_id": "goal-jcode-skills",
+      "depends_on_goal_id": "goal-import-hpr",
+      "provenance": {
+        "kind": "declared",
+        "input_ids": [
+          "input-jcode-only",
+          "input-thin-jcode-delta"
+        ]
+      }
+    },
+    {
+      "goal_id": "goal-jcode-orchestration",
+      "depends_on_goal_id": "goal-jcode-skills",
+      "provenance": {
+        "kind": "declared",
+        "input_ids": [
+          "input-jcode-only",
+          "input-methodology-parity"
+        ]
+      }
+    },
+    {
+      "goal_id": "goal-install-package",
+      "depends_on_goal_id": "goal-pdf-backend",
+      "provenance": {
+        "kind": "declared",
+        "input_ids": [
+          "input-license-boundary"
+        ]
+      }
+    },
+    {
+      "goal_id": "goal-install-package",
+      "depends_on_goal_id": "goal-jcode-orchestration",
+      "provenance": {
+        "kind": "declared",
+        "input_ids": [
+          "input-jcode-only",
+          "input-release-target"
+        ]
+      }
+    },
+    {
+      "goal_id": "goal-parity-validation",
+      "depends_on_goal_id": "goal-install-package",
+      "provenance": {
+        "kind": "declared",
+        "input_ids": [
+          "input-methodology-parity",
+          "input-no-domain-pilot"
+        ]
+      }
+    },
+    {
+      "goal_id": "goal-release-v020",
+      "depends_on_goal_id": "goal-parity-validation",
+      "provenance": {
+        "kind": "declared",
+        "input_ids": [
+          "input-release-target",
+          "input-license-boundary"
+        ]
+      }
+    },
+    {
+      "goal_id": "goal-benchmark-monokl-pilot",
+      "depends_on_goal_id": "goal-parity-validation",
+      "provenance": {
+        "kind": "declared",
+        "input_ids": [
+          "input-benchmark-monokl-pilot",
+          "input-methodology-parity"
+        ]
+      }
+    },
+    {
+      "goal_id": "goal-benchmark-paired-hpr",
+      "depends_on_goal_id": "goal-benchmark-monokl-pilot",
+      "provenance": {
+        "kind": "declared",
+        "input_ids": [
+          "input-benchmark-monokl-pilot",
+          "input-benchmark-paired-hpr"
+        ]
+      }
+    },
+    {
+      "goal_id": "goal-benchmark-monokl-full",
+      "depends_on_goal_id": "goal-benchmark-paired-hpr",
+      "provenance": {
+        "kind": "declared",
+        "input_ids": [
+          "input-benchmark-paired-hpr",
+          "input-benchmark-monokl-full"
+        ]
+      }
+    }
+  ],
+  "recovery": {
+    "max_attempts_per_goal": 2,
+    "allowed_failed_transition": "blocked"
+  },
+  "supersedes": {
+    "id": "plan-monokl-development",
+    "version": 11
+  }
+}
