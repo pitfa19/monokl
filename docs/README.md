@@ -9,6 +9,7 @@ This directory is the maintainer and contributor map for Monokl. Start with the 
 3. [Third-party license inventory](third-party-license-inventory.md) - license boundaries for packaged and optional dependencies.
 4. [PDF backend decision](pdf-backend-decision.md) - PyMuPDF licensing and PDF extraction rationale.
 5. [Preservation baseline](preservation-baseline.md) - record of the preserved pre-rewrite state.
+6. [DeepResearch-Bench pilot protocol](evaluation/deepresearch-bench-pilot.md) - pre-registered single-question calibration before the nine-task Monokl pilot.
 
 ## Planning and implementation records
 
