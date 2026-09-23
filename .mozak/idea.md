@@ -25,7 +25,7 @@ Build a Jcode-native research extension derived from HyperResearch that preserve
 
 ## Assumptions
 
-- HyperResearch commit `75b1ecfb2891184fad2cc1a2ddf9abe476f5b54c` is the pinned upstream baseline.
+- HyperResearch commit `d329565d3fa0a74c8b5a80daa6c5e32e33c39799` is the pinned upstream baseline.
 - Python remains the implementation language for the imported research engine and CLI.
 - Jcode skills plus swarm task graphs can represent the upstream skill and subagent boundaries without changing methodology.
 - PyMuPDF is replaced only if a permissively licensed backend demonstrates equivalent or better compatibility on representative fixtures.

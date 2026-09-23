@@ -2,15 +2,15 @@
 
 Monokl v0.2 is derived from [HyperResearch](https://github.com/jordan-gibbs/hyperresearch).
 
-- Upstream revision: `75b1ecfb2891184fad2cc1a2ddf9abe476f5b54c`
+- Upstream revision: `d329565d3fa0a74c8b5a80daa6c5e32e33c39799`
 - Upstream package version at that revision: `0.11.1`
 - Import method: exact Git tree checkout into the preserved Monokl repository
 - Original license: MIT
 - Original copyright: Jordan Gibbs, 2026
-- Upstream baseline environment: Python 3.13.13
-- Upstream baseline tests: 1,269 passed
-- Upstream baseline lint: Ruff passed
-- Upstream baseline type check: not green because optional third-party packages lack stubs and the installed NumPy stub emitted a Python 3.13 syntax diagnostic
+- Integrated Monokl baseline environment: Python 3.13.13
+- Integrated Monokl tests at this pin: 1,325 passed
+- Integrated Monokl lint at this pin: Ruff passed
+- Type check: not used as an acceptance gate because optional third-party packages lack stubs and the installed NumPy stub emits a Python 3.13 syntax diagnostic
 
 ## Mapping
 
@@ -19,7 +19,7 @@ Every path present in the pinned upstream tree was imported at the same path and
 The code-level delta from this pinned revision is catalogued in `docs/code-delta-from-hyperresearch.md`. Reproduce the inventory with:
 
 ```bash
-git diff --name-status 75b1ecfb2891184fad2cc1a2ddf9abe476f5b54c..HEAD
+git diff --name-status d329565d3fa0a74c8b5a80daa6c5e32e33c39799..HEAD
 ```
 
 ## Product delta policy

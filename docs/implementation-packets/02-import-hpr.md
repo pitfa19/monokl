@@ -5,7 +5,7 @@ Replace the custom Monokl implementation with the pinned HyperResearch core whil
 
 ## Inputs
 - Preserved repository SHA from Packet 01.
-- HyperResearch commit `75b1ecfb2891184fad2cc1a2ddf9abe476f5b54c`.
+- HyperResearch commit `d329565d3fa0a74c8b5a80daa6c5e32e33c39799`.
 - Upstream MIT license and copyright.
 
 ## Allowed changes

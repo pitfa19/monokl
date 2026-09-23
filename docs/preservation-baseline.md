@@ -11,7 +11,8 @@ Recorded: 2026-09-21
 - Existing release assets: `monokl-0.1.0-py3-none-any.whl`, `SHA256SUMS`
 - Baseline tests: 41 passed, 2 skipped, 27 subtests passed
 - HyperResearch upstream: `https://github.com/jordan-gibbs/hyperresearch`
-- Pinned upstream revision: `75b1ecfb2891184fad2cc1a2ddf9abe476f5b54c`
+- Original pinned upstream revision at preservation: `75b1ecfb2891184fad2cc1a2ddf9abe476f5b54c`
+- Current approved development baseline: `d329565d3fa0a74c8b5a80daa6c5e32e33c39799`
 - Upstream release tag `v0.11.1`: `b44be7e3c451f9c16cba9fa09495a287687078db`
 
 The archive branch and preservation tag resolve to the recorded repository revision. The existing release remains public and was not modified.

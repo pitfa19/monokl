@@ -21,7 +21,7 @@ Make the current repository and v0.1.0 implementation recoverable before replaci
 2. The preservation tag resolves to that SHA and is annotated.
 3. `v0.1.0` remains public with its assets.
 4. The current test suite result and repository tree hash are recorded.
-5. Upstream HEAD is exactly `75b1ecfb2891184fad2cc1a2ddf9abe476f5b54c`.
+5. The pinned upstream baseline is exactly `d329565d3fa0a74c8b5a80daa6c5e32e33c39799`; the moving upstream branch is recorded separately.
 
 ## Stop conditions
 Stop before mutation if any current work is uncommitted, a preservation ref already exists at a different SHA, or remote verification fails.

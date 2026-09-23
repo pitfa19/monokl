@@ -2,6 +2,8 @@
 
 ## [Unreleased]
 
+- Advanced the pinned HyperResearch baseline from `75b1ecfb2891184fad2cc1a2ddf9abe476f5b54c` to `d329565d3fa0a74c8b5a80daa6c5e32e33c39799`, preserving Monokl's Jcode-specific product delta.
+
 ## [0.2.0] - 2026-09-21
 
 - Rebased Monokl on pinned HyperResearch commit `75b1ecfb2891184fad2cc1a2ddf9abe476f5b54c`.

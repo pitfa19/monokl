@@ -1,6 +1,6 @@
 # Code delta from HyperResearch
 
-Monokl is a Jcode-focused fork of HyperResearch. Its imported baseline is upstream commit `75b1ecfb2891184fad2cc1a2ddf9abe476f5b54c`, package version `0.11.1`.
+Monokl is a Jcode-focused fork of HyperResearch. Its imported baseline is upstream commit `d329565d3fa0a74c8b5a80daa6c5e32e33c39799`, package version `0.11.1`.
 
 This document grounds the Monokl delta in repository paths. It distinguishes executable changes from generated skill payloads and project documentation.
 
@@ -44,9 +44,9 @@ The research gates and artifacts are inherited. The translation changes how Jcod
 ## Reproduce the delta
 
 ```bash
-git diff --stat 75b1ecfb2891184fad2cc1a2ddf9abe476f5b54c..HEAD
-git diff --name-status 75b1ecfb2891184fad2cc1a2ddf9abe476f5b54c..HEAD
-git diff 75b1ecfb2891184fad2cc1a2ddf9abe476f5b54c..HEAD -- src/hyperresearch pyproject.toml .github/workflows/publish.yml
+git diff --stat d329565d3fa0a74c8b5a80daa6c5e32e33c39799..HEAD
+git diff --name-status d329565d3fa0a74c8b5a80daa6c5e32e33c39799..HEAD
+git diff d329565d3fa0a74c8b5a80daa6c5e32e33c39799..HEAD -- src/hyperresearch pyproject.toml .github/workflows/publish.yml
 ```
 
 The first two commands include documentation, MOZAK planning records, tests, and branding. The third narrows review to executable and packaging changes.

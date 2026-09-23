@@ -54,7 +54,7 @@ The synthesizer is tool-locked to `[Read, Write]` — it cannot run Bash to quer
 
 For each substantive contradiction between drafts:
 1. Identify the cited source IDs on both sides
-2. `$HPR note show <id1> <id2> -j` to read the actual source bodies
+2. `hyperresearch note show <id1> <id2> -j` to read the actual source bodies
 3. Decide which side is correct. Write the verdict to `research/runs/<vault_tag>/temp/synthesis-conflicts.md`:
    ```markdown
    ## Conflict 1: <one-line description>
