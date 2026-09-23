@@ -1,0 +1,125 @@
+{
+  "sub_questions": [
+    "What is the Diamond Sutra (Vajracchedikā Prajñāpāramitā Sūtra), and what textual, historical, and doctrinal context is needed to study it in depth?",
+    "What are the Diamond Sutra's central teachings, arguments, paradoxes, images, and interpretive challenges?",
+    "How can the Diamond Sutra be analyzed and interpreted from various philosophical, religious, historical, literary, psychological, and practical perspectives?",
+    "How are the Diamond Sutra's teachings relevant to daily life?",
+    "How are the Diamond Sutra's teachings relevant to the workplace and career?",
+    "How are the Diamond Sutra's teachings relevant to business practices?",
+    "How are the Diamond Sutra's teachings relevant to marriage?",
+    "How are the Diamond Sutra's teachings relevant to parenting?",
+    "How are the Diamond Sutra's teachings relevant to emotional well-being?",
+    "How are the Diamond Sutra's teachings relevant to interpersonal dynamics?"
+  ],
+  "entities": [
+    {
+      "name": "Diamond Sutra",
+      "type": "Buddhist scripture",
+      "required_fields": [
+        "textual and historical context",
+        "central teachings",
+        "deep analysis",
+        "interpretation from various perspectives",
+        "practical relevance"
+      ]
+    },
+    {
+      "name": "Vajracchedikā Prajñāpāramitā Sūtra",
+      "type": "canonical title",
+      "required_fields": [
+        "relationship to the Diamond Sutra",
+        "meaning and doctrinal significance"
+      ]
+    },
+    {
+      "name": "daily life",
+      "type": "application context",
+      "required_fields": ["teachings", "relevance", "practical interpretation"]
+    },
+    {
+      "name": "workplace/career",
+      "type": "application context",
+      "required_fields": ["teachings", "relevance", "practical interpretation"]
+    },
+    {
+      "name": "business practices",
+      "type": "application context",
+      "required_fields": ["teachings", "relevance", "practical interpretation"]
+    },
+    {
+      "name": "marriage",
+      "type": "application context",
+      "required_fields": ["teachings", "relevance", "practical interpretation"]
+    },
+    {
+      "name": "parenting",
+      "type": "application context",
+      "required_fields": ["teachings", "relevance", "practical interpretation"]
+    },
+    {
+      "name": "emotional well-being",
+      "type": "application context",
+      "required_fields": ["teachings", "relevance", "practical interpretation"]
+    },
+    {
+      "name": "interpersonal dynamics",
+      "type": "application context",
+      "required_fields": ["teachings", "relevance", "practical interpretation"]
+    }
+  ],
+  "required_formats": [
+    "comprehensive, in-depth study notes",
+    "deep analysis and interpretation from various perspectives",
+    "context-specific exploration of teachings and relevance"
+  ],
+  "required_sections": [
+    "Textual, historical, and doctrinal foundations",
+    "Central teachings and interpretive analysis",
+    "Interpretation from various perspectives",
+    "Relevance to daily life",
+    "Relevance to the workplace/career",
+    "Relevance to business practices",
+    "Relevance to marriage",
+    "Relevance to parenting",
+    "Relevance to emotional well-being",
+    "Relevance to interpersonal dynamics"
+  ],
+  "required_section_headings": [
+    "## 1. Textual, Historical, and Doctrinal Foundations",
+    "## 2. Central Teachings, Paradoxes, and Interpretive Challenges",
+    "## 3. Interpretations from Various Perspectives",
+    "## 4. Relevance to Daily Life and Emotional Well-Being",
+    "## 5. Relevance to the Workplace, Career, and Business Practices",
+    "## 6. Relevance to Marriage and Parenting",
+    "## 7. Relevance to Interpersonal Dynamics"
+  ],
+  "time_horizons": [],
+  "time_periods": [],
+  "scope_conditions": [
+    "Create study notes specifically for the Diamond Sutra (Vajracchedikā Prajñāpāramitā Sūtra).",
+    "Provide comprehensive and in-depth coverage rather than a short summary.",
+    "Analyze and interpret the text from multiple perspectives.",
+    "Explore both the teachings themselves and their relevance in every explicitly named context.",
+    "Treat the named contexts as examples that must all be covered, not as an exhaustive limit on relevant applications."
+  ],
+  "pipeline_tier": "full",
+  "response_format": "structured",
+  "citation_style": "wikilink",
+  "levers": {
+    "register": "analyze",
+    "register_confidence": "high",
+    "domain_notes": "Prioritize primary Buddhist textual witnesses and reputable scholarly translations and commentaries, then use peer-reviewed Buddhist studies, intellectual history, and carefully bounded psychology or organizational scholarship for modern applications. Distinguish claims grounded in the sutra from later doctrinal interpretation and from contemporary practical extrapolation; compare translations where wording materially changes interpretation. Historical and philological claims should rely on durable scholarship, while current workplace, business, family, and well-being applications may use recent evidence where relevant without presenting modern analogies as the sutra's original meaning.",
+    "inference_depth": "deep",
+    "rationale": {
+      "register": "The query explicitly asks for deep analysis and interpretation from various perspectives.",
+      "inference_depth": "The requested synthesis spans a difficult primary text, multiple interpretive traditions, and seven modern application contexts, requiring careful inference across doctrinal and contemporary evidence."
+    }
+  },
+  "provenance": {
+    "stage": "1",
+    "role": "prompt-decomposer",
+    "provider": "openai",
+    "model": "gpt-5.6-sol",
+    "route": "gpt-5.6-sol"
+  }
+}

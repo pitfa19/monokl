@@ -1,0 +1,153 @@
+{
+  "ok": true,
+  "data": {
+    "manifest_version": 1,
+    "vault_tag": "drb-task-95",
+    "profile": "full",
+    "profile_steps": [
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+      "10",
+      "11",
+      "12",
+      "13",
+      "14",
+      "15",
+      "16"
+    ],
+    "status": "done",
+    "started_at": "2026-09-23T09:02:58.177063+00:00",
+    "updated_at": "2026-09-23T17:25:51.175274+00:00",
+    "budget_usd": 70.0,
+    "blocked_on": null,
+    "steps": {
+      "1": {
+        "status": "done",
+        "started_at": "2026-09-23T09:06:38.883927+00:00",
+        "finished_at": "2026-09-23T09:08:46.543723+00:00"
+      },
+      "2": {
+        "status": "done",
+        "finished_at": "2026-09-23T14:43:11.424726+00:00"
+      },
+      "3": {
+        "status": "skipped",
+        "finished_at": "2026-09-23T14:43:53.326173+00:00"
+      },
+      "4": {
+        "status": "done",
+        "finished_at": "2026-09-23T14:57:41.269067+00:00"
+      },
+      "5": {
+        "status": "done",
+        "finished_at": "2026-09-23T15:07:28.578579+00:00"
+      },
+      "6": {
+        "status": "done",
+        "finished_at": "2026-09-23T15:13:43.474657+00:00"
+      },
+      "7": {
+        "status": "done",
+        "finished_at": "2026-09-23T15:22:17.682462+00:00"
+      },
+      "8": {
+        "status": "done",
+        "finished_at": "2026-09-23T15:41:49.568890+00:00"
+      },
+      "9": {
+        "status": "skipped",
+        "finished_at": "2026-09-23T15:42:32.210100+00:00"
+      },
+      "10": {
+        "status": "done",
+        "finished_at": "2026-09-23T15:57:51.706327+00:00"
+      },
+      "11": {
+        "status": "done",
+        "finished_at": "2026-09-23T16:09:11.706988+00:00"
+      },
+      "12": {
+        "status": "done",
+        "finished_at": "2026-09-23T16:18:45.429530+00:00"
+      },
+      "13": {
+        "status": "done",
+        "finished_at": "2026-09-23T16:19:25.983673+00:00"
+      },
+      "14": {
+        "status": "done",
+        "finished_at": "2026-09-23T16:31:23.970075+00:00"
+      },
+      "14.5": {
+        "status": "done",
+        "finished_at": "2026-09-23T16:59:09.289146+00:00"
+      },
+      "15": {
+        "status": "done",
+        "finished_at": "2026-09-23T17:08:35.722928+00:00"
+      },
+      "16": {
+        "status": "done",
+        "finished_at": "2026-09-23T17:24:36.324097+00:00"
+      }
+    },
+    "chapters": {},
+    "spend": {
+      "estimated_usd": 0.0,
+      "sources_fetched": 70,
+      "notes_written": 77,
+      "agents_spawned": 49
+    },
+    "levers": {
+      "register": "analyze",
+      "inference_depth": "deep",
+      "domain_notes": "Prioritize primary Buddhist textual witnesses and reputable scholarly translations and commentaries, then use peer-reviewed Buddhist studies, intellectual history, and carefully bounded psychology or organizational scholarship for modern applications. Distinguish claims grounded in the sutra from later doctrinal interpretation and from contemporary practical extrapolation; compare translations where wording materially changes interpretation. Historical and philological claims should rely on durable scholarship, while current workplace, business, family, and well-being applications may use recent evidence where relevant without presenting modern analogies as the sutra's original meaning."
+    },
+    "verify": {
+      "passed": true,
+      "at": "2026-09-23T17:25:51.173528+00:00",
+      "failed_checks": []
+    },
+    "resume": {
+      "next_step": null,
+      "done_steps": [
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        "10",
+        "11",
+        "12",
+        "13",
+        "14",
+        "15",
+        "16"
+      ],
+      "remaining_steps": [],
+      "chapters_pending": []
+    },
+    "possibly_stalled": false,
+    "budget_remaining_usd": 70.0,
+    "escalations": {
+      "queued": 2,
+      "in_progress": 0,
+      "fetched": 0,
+      "needs_human": 0,
+      "abandoned": 0
+    }
+  },
+  "vault": "/home/pitfa/Documents/monokl-evaluation-runs/drb-task-95/vault",
+  "timestamp": "2026-09-23T17:27:57.918604+00:00"
+}

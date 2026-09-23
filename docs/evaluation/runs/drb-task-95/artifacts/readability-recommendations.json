@@ -1,0 +1,102 @@
+[
+  {
+    "id": "readability-01",
+    "category": "break-paragraph",
+    "severity": "high",
+    "location": "Section 1, 'A plural textual tradition', paragraph beginning 'A focused Asaṅga-commentary study' (line 25)",
+    "current exact text": "A focused Asaṅga-commentary study supplies two contested examples. When Sanskrit ablative relations and the causal force of *nimitta* are retained, *saṃjñā* ceases as its causes change; when those relations are omitted and *nimitta* is rendered only as “form,” the passage can suggest that an ontological object must be destroyed. Yijing renders *sattvavastunimitta* epistemologically as an “aggregate named sentient being,” whereas Bodhiruci separates it into “sentient beings and the five aggregates,” inviting a more ontological reading. These are paraphrases of one study, not a complete variant apparatus, but they show how grammar and translation can shift interpretation from conditioned cognition toward entity-removal [[asaṅga의-금강경-주석서에-나타난-니밋타nimitta와-삼즈냐saṃjñā-동아시아불교문화-동아시아불교문화학회-kiss]].",
+    "recommended exact text": "A focused Asaṅga-commentary study supplies two contested examples. When Sanskrit ablative relations and the causal force of *nimitta* are retained, *saṃjñā* ceases as its causes change; when those relations are omitted and *nimitta* is rendered only as “form,” the passage can suggest that an ontological object must be destroyed. Yijing renders *sattvavastunimitta* epistemologically as an “aggregate named sentient being,” whereas Bodhiruci separates it into “sentient beings and the five aggregates,” inviting a more ontological reading.\n\nThese are paraphrases of one study, not a complete variant apparatus, but they show how grammar and translation can shift interpretation from conditioned cognition toward entity-removal [[asaṅga의-금강경-주석서에-나타난-니밋타nimitta와-삼즈냐saṃjñā-동아시아불교문화-동아시아불교문화학회-kiss]].",
+    "rationale": "Separates the two technical examples from the evidentiary qualification, making the paragraph easier to scan without changing wording, claims, or citation placement.",
+    "expected_char_delta": 1
+  },
+  {
+    "id": "readability-02",
+    "category": "break-paragraph",
+    "severity": "high",
+    "location": "Section 1, 'Doctrine, ritual, and material reception', paragraph beginning 'Two analytical layers' (line 45)",
+    "current exact text": "Two analytical layers must remain distinct. The earliest recoverable textual-pedagogical structure constrains plausible interpretation. Later performance and material reception show what the scripture meant and did in particular communities. Reception is constitutive of historical meaning, but it does not make every later use equally authoritative for reconstructing the earliest discourse. The redactional history of recitation, writing, merit, and sacred-place passages remains unresolved. Broad early attestation would strengthen the claim that material transmission belongs to the sutra’s earliest doctrinal-practical script. Late or marginal attestation would relocate, not erase, the argument: reception would remain historically constitutive while carrying less weight as evidence for the earliest recoverable dialogue.",
+    "recommended exact text": "Two analytical layers must remain distinct. The earliest recoverable textual-pedagogical structure constrains plausible interpretation. Later performance and material reception show what the scripture meant and did in particular communities. Reception is constitutive of historical meaning, but it does not make every later use equally authoritative for reconstructing the earliest discourse.\n\nThe redactional history of recitation, writing, merit, and sacred-place passages remains unresolved. Broad early attestation would strengthen the claim that material transmission belongs to the sutra’s earliest doctrinal-practical script. Late or marginal attestation would relocate, not erase, the argument: reception would remain historically constitutive while carrying less weight as evidence for the earliest recoverable dialogue.",
+    "rationale": "Creates a visible transition from the two-layer interpretive rule to the unresolved redactional question and its consequences.",
+    "expected_char_delta": 1
+  },
+  {
+    "id": "readability-03",
+    "category": "break-paragraph",
+    "severity": "high",
+    "location": "Section 2, 'Teaching without possessing the teaching', first paragraph (line 75)",
+    "current exact text": "The sutra turns its method upon Buddhism itself. Dharma and non-dharma are not to be grasped. Attainments, buddha-fields, bodily marks, merit, and even “teaching the Dharma” cannot become achievements owned by a spiritual self. The raft image matters: teachings are used to cross, not carried as permanent identity. Yet one must use the raft. Refusing grasping is not a reason to refuse study, cultivation, or communication. The sequence also blocks easy replacement essences: the Buddha cannot be identified by form or voice, awakening is not a dharma acquired, and even selflessness cannot become a standpoint in which one abides [[vajracchedikā-prajñāpāramitā-gretil]].",
+    "recommended exact text": "The sutra turns its method upon Buddhism itself. Dharma and non-dharma are not to be grasped. Attainments, buddha-fields, bodily marks, merit, and even “teaching the Dharma” cannot become achievements owned by a spiritual self. The raft image matters: teachings are used to cross, not carried as permanent identity. Yet one must use the raft. Refusing grasping is not a reason to refuse study, cultivation, or communication.\n\nThe sequence also blocks easy replacement essences: the Buddha cannot be identified by form or voice, awakening is not a dharma acquired, and even selflessness cannot become a standpoint in which one abides [[vajracchedikā-prajñāpāramitā-gretil]].",
+    "rationale": "Gives the replacement-essences point its own visual unit after the raft explanation, reducing density while preserving the argument and citation.",
+    "expected_char_delta": 1
+  },
+  {
+    "id": "readability-04",
+    "category": "break-paragraph",
+    "severity": "high",
+    "location": "Section 3, 'Psychological, with strict limits', paragraph beginning 'These findings test modern constructs' (line 118)",
+    "current exact text": "These findings test modern constructs. They do not measure realization of emptiness, the bodhisattva vow, merit, awakening, or the sutra’s total practice. Longitudinal findings weaken simple causal stories: concurrent relationships among mindfulness, nonattachment, and affect do not reliably become later causal effects [[does-mindfulness-facilitate-letting-be-a-longitudinal-investigation-of-nonattach]]. Existing measures also do not adequately distinguish adaptive nonattachment from avoidance, suppression, alexithymia, dissociation, social desirability, or spiritual bypass.",
+    "recommended exact text": "These findings test modern constructs. They do not measure realization of emptiness, the bodhisattva vow, merit, awakening, or the sutra’s total practice.\n\nLongitudinal findings weaken simple causal stories: concurrent relationships among mindfulness, nonattachment, and affect do not reliably become later causal effects [[does-mindfulness-facilitate-letting-be-a-longitudinal-investigation-of-nonattach]]. Existing measures also do not adequately distinguish adaptive nonattachment from avoidance, suppression, alexithymia, dissociation, social desirability, or spiritual bypass.",
+    "rationale": "Separates the construct-validity boundary from the longitudinal and discriminant-validity limitations, clarifying two distinct cautions.",
+    "expected_char_delta": 1
+  },
+  {
+    "id": "readability-05",
+    "category": "break-paragraph",
+    "severity": "high",
+    "location": "Section 3, 'Psychological, with strict limits', paragraph beginning 'One popular mechanism fails' (line 130)",
+    "current exact text": "One popular mechanism fails a direct check: a systematic review of standardized eight-week programs found no overall improvement in objective attention or executive function. The chain “meditation improves attention, therefore nonreactivity, therefore every desired outcome” is not universal [[consciousness-and-cognition]]. Safety also requires differentiation. A systematic review reported meditation-related adverse events in 8.3 percent of participants overall, with substantial heterogeneity; anxiety, depression, and cognitive anomalies were common categories [[1011112facps13225]]. That estimate should not be mechanically applied to brief reflection, but intensive practice is not risk-free. Using the sutra only to optimize symptoms, productivity, or a more successful self also turns non-abiding into another possession.",
+    "recommended exact text": "One popular mechanism fails a direct check: a systematic review of standardized eight-week programs found no overall improvement in objective attention or executive function. The chain “meditation improves attention, therefore nonreactivity, therefore every desired outcome” is not universal [[consciousness-and-cognition]].\n\nSafety also requires differentiation. A systematic review reported meditation-related adverse events in 8.3 percent of participants overall, with substantial heterogeneity; anxiety, depression, and cognitive anomalies were common categories [[1011112facps13225]]. That estimate should not be mechanically applied to brief reflection, but intensive practice is not risk-free. Using the sutra only to optimize symptoms, productivity, or a more successful self also turns non-abiding into another possession.",
+    "rationale": "Separates the failed attention mechanism from the adverse-event discussion so readers can distinguish efficacy limits from safety limits.",
+    "expected_char_delta": 1
+  },
+  {
+    "id": "readability-06",
+    "category": "break-paragraph",
+    "severity": "high",
+    "location": "Section 4, 'Relate to emotion as information, not identity', safety-screen paragraph (line 161)",
+    "current exact text": "A provisional safety screen asks whether nonattachment increases emotional contact, clarity, communication, boundaries, repair, and proportionate protection. A harmful lookalike instead produces vagueness, premature forgiveness, dissociation, refusal of conflict, or tolerance of preventable harm [[nonattachment-without-withdrawal-tests-for-spiritual-bypass]]. Preliminary cross-sectional evidence also links emotional restrictiveness and narcissism with distress beyond spiritual identification, so calmness or spiritual self-description is not evidence of integration [[1010022fj2161-007x2010tb00014x]]. These are indicators, not validated necessary-and-sufficient criteria. Ambiguous, delayed, mixed, or high-risk cases require longitudinal observation and qualified clinical or safeguarding assessment.",
+    "recommended exact text": "A provisional safety screen asks whether nonattachment increases emotional contact, clarity, communication, boundaries, repair, and proportionate protection. A harmful lookalike instead produces vagueness, premature forgiveness, dissociation, refusal of conflict, or tolerance of preventable harm [[nonattachment-without-withdrawal-tests-for-spiritual-bypass]].\n\nPreliminary cross-sectional evidence also links emotional restrictiveness and narcissism with distress beyond spiritual identification, so calmness or spiritual self-description is not evidence of integration [[1010022fj2161-007x2010tb00014x]]. These are indicators, not validated necessary-and-sufficient criteria. Ambiguous, delayed, mixed, or high-risk cases require longitudinal observation and qualified clinical or safeguarding assessment.",
+    "rationale": "Separates the practical screen from the supporting evidence and qualification, improving navigation through a high-stakes safety passage.",
+    "expected_char_delta": 1
+  },
+  {
+    "id": "readability-07",
+    "category": "break-paragraph",
+    "severity": "high",
+    "location": "Section 5, 'Career decisions without self-erasure', first paragraph (line 177)",
+    "current exact text": "As a contemporary extrapolation, non-abiding separates vocation and performance from an exhaustive professional identity. When choosing work or seeking promotion, ask whether the role serves real needs, whether its harms can be changed, and what compromise it requires. After rejection, job loss, or criticism, preserve the information and practical consequences without converting one evaluation into “I am a failure.” One may prepare, negotiate, compete fairly, and pursue mastery without making status the measure of personhood. Conversely, “letting go” must not disguise suppressed ambition, passive acceptance of exploitation, or refusal to leave unethical work. This guidance derives from non-abiding action and evidence associating self-concept flexibility with well-being, not from a trial of Diamond Sutra-based career decisions [[vajracchedikā-prajñāpāramitā-gretil]] [[frontiers-in-psychology]].",
+    "recommended exact text": "As a contemporary extrapolation, non-abiding separates vocation and performance from an exhaustive professional identity. When choosing work or seeking promotion, ask whether the role serves real needs, whether its harms can be changed, and what compromise it requires. After rejection, job loss, or criticism, preserve the information and practical consequences without converting one evaluation into “I am a failure.” One may prepare, negotiate, compete fairly, and pursue mastery without making status the measure of personhood. Conversely, “letting go” must not disguise suppressed ambition, passive acceptance of exploitation, or refusal to leave unethical work.\n\nThis guidance derives from non-abiding action and evidence associating self-concept flexibility with well-being, not from a trial of Diamond Sutra-based career decisions [[vajracchedikā-prajñāpāramitā-gretil]] [[frontiers-in-psychology]].",
+    "rationale": "Moves the evidence-boundary sentence into its own paragraph, making the practical guidance easier to read while keeping its qualification prominent.",
+    "expected_char_delta": 1
+  },
+  {
+    "id": "readability-08",
+    "category": "break-paragraph",
+    "severity": "medium",
+    "location": "Section 5, 'Career decisions without self-erasure', care-work paragraph (line 181)",
+    "current exact text": "Care work makes the level distinction concrete. A review of 79 studies involving 28,509 nurses found moderate pooled compassion satisfaction, burnout, and secondary traumatic stress, with burdens worsening over time and especially severe estimates in some Asian and intensive-care samples [[international-journal-of-nursing-studies]]. A 71-study healthcare review found compassion fatigue across practitioner groups, with consequences for provider health, effectiveness, and patient care [[nursing-ethics]]. Nonattachment should support sustainable care, recovery, peer support, and boundaries, not sanctify limitless emotional availability. Staffing, traumatic exposure, and organizational duty remain institution-level causes.",
+    "recommended exact text": "Care work makes the level distinction concrete. A review of 79 studies involving 28,509 nurses found moderate pooled compassion satisfaction, burnout, and secondary traumatic stress, with burdens worsening over time and especially severe estimates in some Asian and intensive-care samples [[international-journal-of-nursing-studies]]. A 71-study healthcare review found compassion fatigue across practitioner groups, with consequences for provider health, effectiveness, and patient care [[nursing-ethics]].\n\nNonattachment should support sustainable care, recovery, peer support, and boundaries, not sanctify limitless emotional availability. Staffing, traumatic exposure, and organizational duty remain institution-level causes.",
+    "rationale": "Separates the empirical review findings from the normative and institutional implications, strengthening the paragraph's evidence-to-application structure.",
+    "expected_char_delta": 1
+  },
+  {
+    "id": "readability-09",
+    "category": "break-paragraph",
+    "severity": "high",
+    "location": "Section 5, 'Co-option versus right-livelihood business design', first paragraph (line 201)",
+    "current exact text": "In business, profit may be necessary but is not an ultimate good. Employees, customers, communities, and ecosystems cannot be reduced to instruments of corporate identity. Critical scholarship shows how contemplative programs can individualize structural complaints and become technologies of neoliberal responsibilization [[1011772f04866134211063521]] [[1011112fspc312936]]. Right-livelihood scholarship instead proposes institutions shaped by social justice, basic needs and sufficiency, ecological soundness, stability, and resilience. Buddhist-management writing adds non-harming, compassion, fairness, and social and environmental responsibility [[right-livelihood-institutions-springer-nature-link]] [[1011082fjmd-09-2013-0120]]. These sources propose ethical designs; they do not prove that Buddhist branding produces them.",
+    "recommended exact text": "In business, profit may be necessary but is not an ultimate good. Employees, customers, communities, and ecosystems cannot be reduced to instruments of corporate identity. Critical scholarship shows how contemplative programs can individualize structural complaints and become technologies of neoliberal responsibilization [[1011772f04866134211063521]] [[1011112fspc312936]].\n\nRight-livelihood scholarship instead proposes institutions shaped by social justice, basic needs and sufficiency, ecological soundness, stability, and resilience. Buddhist-management writing adds non-harming, compassion, fairness, and social and environmental responsibility [[right-livelihood-institutions-springer-nature-link]] [[1011082fjmd-09-2013-0120]]. These sources propose ethical designs; they do not prove that Buddhist branding produces them.",
+    "rationale": "Makes the contrast between co-option critique and right-livelihood alternatives visually explicit without altering either side of the comparison.",
+    "expected_char_delta": 1
+  },
+  {
+    "id": "readability-10",
+    "category": "break-paragraph",
+    "severity": "high",
+    "location": "Section 6, 'Parenting: the child is neither possession nor project', condition-specific study paragraph (line 239)",
+    "current exact text": "A condition-specific study of parallel eight-week training for children aged 8–12 with ADHD and their parents illustrates the limit. Parent ratings improved for parent and child behavior, stress, overreactivity, and mindful awareness, while teacher-rated ADHD and oppositional behavior did not show substantial effects [[the-effectiveness-of-mindfulness-training-for-children-with-adhd-and-mindful-par]]. Parent-perceived gains may be meaningful, but recommendations for neurodivergent children should be individualized, preserve established care, seek child assent, include school feedback, and track outcomes across informants.",
+    "recommended exact text": "A condition-specific study of parallel eight-week training for children aged 8–12 with ADHD and their parents illustrates the limit. Parent ratings improved for parent and child behavior, stress, overreactivity, and mindful awareness, while teacher-rated ADHD and oppositional behavior did not show substantial effects [[the-effectiveness-of-mindfulness-training-for-children-with-adhd-and-mindful-par]].\n\nParent-perceived gains may be meaningful, but recommendations for neurodivergent children should be individualized, preserve established care, seek child assent, include school feedback, and track outcomes across informants.",
+    "rationale": "Separates the study result from the practical safeguards, making the cross-informant limitation and resulting guidance easier to absorb.",
+    "expected_char_delta": 1
+  }
+]

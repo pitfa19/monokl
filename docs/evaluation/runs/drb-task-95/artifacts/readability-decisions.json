@@ -1,0 +1,29 @@
+{
+  "total_recommendations": 27,
+  "applied": ["rec-008", "rec-010", "rec-011", "rec-012", "rec-020", "rec-026"],
+  "skipped": [
+    {"id": "rec-001", "reason": "Useful but lower impact after the completed polish pass."},
+    {"id": "rec-002", "reason": "Existing paragraph remains coherent and the edit was not necessary."},
+    {"id": "rec-003", "reason": "Preserved the compact argumentative rhythm of the raft discussion."},
+    {"id": "rec-004", "reason": "Preserved claim and limitation together to avoid weakening their connection."},
+    {"id": "rec-005", "reason": "Lower impact than the selected psychological-limit breaks."},
+    {"id": "rec-006", "reason": "Evidence and limitation already scan adequately after polish."},
+    {"id": "rec-007", "reason": "Skipped optional bolding to avoid over-emphasis."},
+    {"id": "rec-009", "reason": "Normative standard and empirical example remain closely related."},
+    {"id": "rec-013", "reason": "Skipped list conversion because the three sentences form a progression."},
+    {"id": "rec-014", "reason": "Career paragraph remained readable after Step 15 tightening."},
+    {"id": "rec-015", "reason": "Kept workplace evidence together for continuity."},
+    {"id": "rec-016", "reason": "Kept empirical burden and application in one compact paragraph."},
+    {"id": "rec-017", "reason": "Skipped optional bolding to avoid over-emphasis."},
+    {"id": "rec-018", "reason": "Skipped optional bolding to avoid over-emphasis."},
+    {"id": "rec-019", "reason": "General rule and example remain a useful single argumentative unit."},
+    {"id": "rec-021", "reason": "Evidence and safety boundary remain closely connected."},
+    {"id": "rec-022", "reason": "The original qualification and mechanism sentence was clear enough."},
+    {"id": "rec-023", "reason": "Avoided fragmenting a short parenting paragraph into a list."},
+    {"id": "rec-024", "reason": "Study result and guidance remain directly connected."},
+    {"id": "rec-025", "reason": "Skipped optional bolding to avoid over-emphasis."},
+    {"id": "rec-027", "reason": "Kept the power diagnosis and boundary implication together."}
+  ],
+  "edit_failures": [],
+  "net_char_delta_actual": 25
+}

@@ -1,0 +1,38 @@
+{
+  "total_findings": 6,
+  "applied": [
+    {
+      "id": "pair-1",
+      "severity": "high",
+      "resolution": "Removed the unsupported Shel dkar manuscript citation while retaining the sentence's other manuscript-study citation."
+    },
+    {
+      "id": "pair-2",
+      "severity": "high",
+      "resolution": "Limited the SAT citation to documented search, parallel-text, and image-linking functions, then stated interface naturalization separately as an interpretive caution."
+    },
+    {
+      "id": "pair-6",
+      "severity": "high",
+      "resolution": "Softened the Dunhuang claim to ritual lecture, prose, verse, explanation, and performed exposition, removing the unsupported communal-hearing claim."
+    },
+    {
+      "id": "pair-20",
+      "severity": "high",
+      "resolution": "Used the metadata-only source solely to document the general Nonattachment Scale and attributed association-level findings to the remaining cited studies."
+    },
+    {
+      "id": "pair-45",
+      "severity": "high",
+      "resolution": "Removed worker or community voice from the right-livelihood source attribution because the retained source body does not establish that criterion."
+    },
+    {
+      "id": "pair-60",
+      "severity": "high",
+      "resolution": "Replaced the unsupported prevalence claim with the supported statement that reception evidence shows communities also encountered the sutra through the listed practices and media."
+    }
+  ],
+  "skipped": [],
+  "conflicts": [],
+  "orchestrator_escalated": []
+}

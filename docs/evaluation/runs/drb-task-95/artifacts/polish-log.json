@@ -1,0 +1,38 @@
+{
+  "applied": [
+    {
+      "type": "workspace_leak_removal",
+      "location": "Section 5, Individual benefit is not institutional ethics",
+      "detail": "Removed the workspace-only interim-note wikilink and replaced vault-local phrasing with reader-facing wording."
+    },
+    {
+      "type": "filler_and_redundancy_cut",
+      "location": "Introduction and Sections 1, 2, 3, 4, 5, 6, and 7",
+      "detail": "Cut throat-clearing, repeated qualifications, and redundant framing without changing substantive claims."
+    },
+    {
+      "type": "run_on_repair",
+      "location": "Section 1, translation discussion; Section 2, recurring formula discussion",
+      "detail": "Split two overlong paragraphs at existing claim boundaries."
+    },
+    {
+      "type": "sentence_tightening",
+      "location": "Sections 2 through 7",
+      "detail": "Shortened long sentences in the true-self, psychological-safety, career, business, marriage, and conclusion passages."
+    },
+    {
+      "type": "citation_preservation",
+      "location": "Entire report",
+      "detail": "Preserved all real source wikilinks; removed only the interim workspace-artifact link."
+    }
+  ],
+  "metrics": {
+    "before_words": 4980,
+    "after_words": 4847,
+    "word_delta": -133,
+    "before_chars": 41283,
+    "after_chars": 40300,
+    "char_delta": -983
+  },
+  "escalations": []
+}

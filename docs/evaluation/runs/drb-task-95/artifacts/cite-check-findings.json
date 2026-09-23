@@ -1,0 +1,50 @@
+[
+  {
+    "pair_index": 1,
+    "severity": "high",
+    "sentence": "Manuscript studies show additions, omissions, and transmission differences across witnesses [[sanskrit-manuscripts-of-the-ivajracchedika-prajñaparamitai-in-the-schøyen-collec]] [[the-characteristics-of-the-shel-dkar-manuscript-of-the-tibetan-translation-of-th]].",
+    "note_id": "the-characteristics-of-the-shel-dkar-manuscript-of-the-tibetan-translation-of-th",
+    "issue": "Fails. The cited note body is only a bibliographic landing page for a study titled 'The Characteristics of the Shel dkar Manuscript'; it contains no abstract, findings, or examples establishing additions, omissions, or transmission differences across witnesses.",
+    "suggested_fix": "Remove this citation from the sentence unless the article body is available, or replace it with a note whose retained body explicitly documents additions, omissions, or other witness differences. If retained as metadata only, soften the claim to say that scholarship on the Shel dkar manuscript exists without attributing specific findings to it."
+  },
+  {
+    "pair_index": 2,
+    "severity": "high",
+    "sentence": "The tool through which a reader encounters the sutra can reveal relationships while also making one arrangement of the text seem natural or final [[sat大蔵経テキストデータベース2018]].",
+    "note_id": "sat大蔵経テキストデータベース2018",
+    "issue": "Partial support. The SAT note documents search, parallel-text, image-linking, translation, and related digital-research functions, which supports the claim that the tool can reveal relationships. It does not support the further claim that the interface makes one textual arrangement seem natural or final.",
+    "suggested_fix": "Split the sentence and cite SAT only for its relationship-revealing functions. Present the naturalization/finality point explicitly as the report's interpretive caution, or add a source whose body analyzes interface or edition design as privileging a textual arrangement."
+  },
+  {
+    "pair_index": 6,
+    "severity": "high",
+    "sentence": "The Dunhuang *jiangjingwen*, for example, joined prose, verse, explanation, and performance, showing that meaning was heard and enacted communally [[敦煌-金剛般若波羅密經講經文에-대한-불교문학적-연구-논문-dbpia]].",
+    "note_id": "敦煌-金剛般若波羅密經講經文에-대한-불교문학적-연구-논문-dbpia",
+    "issue": "Partial support. The retained abstract identifies a ritual lecture text, classifies it as performance literature, and discusses commentary in prose and verse. It does not provide evidence about an audience or community sufficient to establish that meaning was heard and enacted communally.",
+    "suggested_fix": "Soften to: 'The Dunhuang *jiangjingwen* joined ritual lecture, prose, verse, and explanation, showing that the sutra was adapted for performed exposition.' Add a reception-history source with explicit audience or communal-practice evidence before claiming communal hearing and enactment."
+  },
+  {
+    "pair_index": 20,
+    "severity": "high",
+    "sentence": "General nonattachment scales, a distinct measure of “nonattachment to self,” two cross-sectional mediation studies, and a meta-analytic structural-equation model converge on association-level links among less fixation on self-concepts, greater well-being, and lower distress [[1010802f00223890903425960]] [[frontiers-in-psychology]] [[nonattachment-mediates-the-relationship-between-mindfulness-and-psychological-we]] [[1010162fjcpr2022102175]].",
+    "note_id": "1010802f00223890903425960",
+    "issue": "Partial support. This note retains Crossref metadata and the title 'A Scale to Measure Nonattachment: A Buddhist Complement to Western Research on Attachment and Adaptive Functioning,' but no abstract or findings. It establishes the existence of a general nonattachment scale, not the detailed association-level links to self-concept fixation, well-being, and lower distress asserted by the sentence.",
+    "suggested_fix": "Use this citation only for the existence of the general Nonattachment Scale, and attribute the specific well-being and distress associations to notes with retained abstracts or results. Alternatively, replace it with a substantive note body for the scale-development study."
+  },
+  {
+    "pair_index": 45,
+    "severity": "high",
+    "sentence": "The constructive alternative is explicitly normative: right-livelihood scholarship proposes institutions shaped by social justice, basic needs and sufficiency, ecological soundness, stability, resilience, and worker or community voice, while Buddhist-management writing adds non-harming, compassion, fairness, and social and environmental responsibility [[right-livelihood-institutions-springer-nature-link]] [[1011082fjmd-09-2013-0120]].",
+    "note_id": "right-livelihood-institutions-springer-nature-link",
+    "issue": "Partial support. The cited note explicitly supports social justice, ecological soundness, sufficiency, stability, and resilience, but its body does not establish worker or community voice. That governance criterion is a material addition to the source's stated institutional vision.",
+    "suggested_fix": "Remove 'and worker or community voice' from the right-livelihood attribution, or add a citation whose note body explicitly establishes worker or community participation and voice as part of the proposed institution."
+  },
+  {
+    "pair_index": 60,
+    "severity": "high",
+    "sentence": "Many communities encountered it primarily through recitation, copying, merit, sacred place, ritual efficacy, narrative, and material circulation, whose relationship to the earliest recoverable discourse remains important and partly unresolved [[doctrine-ritual-and-material-reception-depth-synthesis]].",
+    "note_id": "doctrine-ritual-and-material-reception-depth-synthesis",
+    "issue": "Partial support. The synthesis documents these reception modes and their relationship to the sutra's doctrine, but it does not provide comparative evidence that many communities encountered the text primarily through them. The note also emphasizes that several reception sources expose only metadata or abstracts, so the prevalence claim exceeds the cited body.",
+    "suggested_fix": "Soften to: 'Reception evidence shows that communities also encountered it through recitation, copying, merit, sacred place, ritual efficacy, narrative, and material circulation; how these reception histories relate to the earliest recoverable discourse remains important and partly unresolved.'"
+  }
+]
